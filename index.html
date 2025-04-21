@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtueel EPD - Fysiotherapie</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <a href="#" class="logo">HAN_</a>
+            <div class="user-info">
+                <span id="user-name">Niet ingelogd</span>
+                <button id="logout-btn" class="logout-btn">Uitloggen</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Waarschuwingsbalk -->
+    <div class="warning-banner">
+        <div class="container">
+            <strong>Waarschuwing:</strong> Na het verlaten van deze site worden alle gegevens verwijderd. Maak een PDF van je ingevulde dossier(s) voordat je de site verlaat, bijvoorbeeld voor gebruik in eJournal. Vul vanwege veiligheid (AVG) geen echte patiënt-/persoonsgegevens in.
+        </div>
+    </div>
+
+    <!-- Navigatie -->
+    <nav>
+        <div class="nav-container">
+            <a href="#" class="nav-item" data-target="home">Home</a>
+            <a href="#" class="nav-item" data-target="patients">Patiënten</a>
+            <a href="#" class="nav-item" data-target="add-patient">Patiënt toevoegen</a>
+        </div>
+    </nav>
+
+    <!-- Login pagina -->
+    <div id="login-page" class="page">
+        <div class="container">
+            <div class="login-container">
+                <div class="login-logo">
+                    <h1>HAN_</h1>
+                </div>
+                <h2 class="login-title">Virtueel EPD - Fysiotherapie</h2>
+                
+                <div id="login-alerts"></div>
+                
+                <div class="alert alert-warning">
+                    <strong>Let op!</strong> Dit is een oefenomgeving. Voer geen echte persoonsgegevens in. De data wordt niet permanent bewaard. Ververs de pagina niet voordat je een PDF hebt gegenereerd en gedownload.
+                </div>
+                
+                <form id="login-form" onsubmit="login(event)">
+                    <div class="form-group">
+                        <label for="login-firstname" class="form-label">Voornaam</label>
+                        <input type="text" id="login-firstname" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="login-lastname" class="form-label">Achternaam</label>
+                        <input type="text" id="login-lastname" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="login-cop" class="form-label">COP</label>
+                        <select id="login-cop" class="form-select" required>
+                            <option value="">Selecteer COP</option>
+                            <option value="COP 1">COP 1</option>
+                            <option value="COP 2">COP 2</option>
+                            <option value="COP 3">COP 3</option>
+                            <option value="COP 4">COP 4</option>
+                            <option value="COP 5">COP 5</option>
+                            <option value="TSK">TSK</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="login-password" class="form-label">Wachtwoord</label>
+                        <input type="password" id="login-password" class="form-control" required>
+                        <small class="form-text">Wachtwoord: HANfysiotherapie</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Inloggen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home pagina -->
+    <div id="home-page" class="page" style="display: none;">
+        <div class="container">
+            <h1>Welkom bij het Virtuele EPD voor Fysiotherapie</h1>
+            
+            <div class="card">
+                <div class="card-header">
+                    Informatie
+                </div>
+                <div class="card-body">
+                    <p>Dit is een virtueel Elektronisch Patiënten Dossier (EPD) voor studenten fysiotherapie. Gebruik dit systeem om te oefenen met het bijhouden van patiëntendossiers.</p>
+                    <p>Let op: Dit is een oefenomgeving. De gegevens worden alleen lokaal opgeslagen in je browser en worden niet verzonden naar een server.</p>
+                    <p>Gebruik de navigatiebalk bovenaan om tussen de verschillende onderdelen te navigeren:</p>
+                    <ul>
+                        <li><strong>Home</strong> - Deze startpagina</li>
+                        <li><strong>Patiënten</strong> - Overzicht van alle patiënten</li>
+                        <li><strong>Patiënt toevoegen</strong> - Een nieuwe patiënt aanmaken</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header">
+                    Aan de slag
+                </div>
+                <div class="card-body">
+                    <p>Om te beginnen:</p>
+                    <ol>
+                        <li>Ga naar "Patiënt toevoegen" om een nieuwe patiënt aan te maken</li>
+                        <li>Vul de basisgegevens van de patiënt in</li>
+                        <li>Ga naar "Patiënten" om het overzicht te bekijken</li>
+                        <li>Klik op "Bewerken" om het dossier van een patiënt te bewerken</li>
+                        <li>Vul de verschillende fases van het dossier in</li>
+                        <li>Klik op "PDF Genereren" om een PDF van het dossier te maken</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patiënten pagina -->
+    <div id="patients-page" class="page" style="display: none;">
+        <div class="container">
+            <h1>Patiënten</h1>
+            
+            <div id="patient-list-alerts"></div>
+            
+            <div class="card">
+                <div class="card-header">
+                    Patiëntenoverzicht
+                </div>
+                <div class="card-body">
+                    <div id="patient-list">
+                        <!-- Patiëntenlijst wordt hier dynamisch ingevuld -->
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="#" class="btn btn-primary" data-target="add-patient">Nieuwe patiënt toevoegen</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patiënt toevoegen pagina -->
+    <div id="add-patient-page" class="page" style="display: none;">
+        <div class="container">
+            <h1>Patiënt toevoegen</h1>
+            
+            <div id="add-patient-alerts"></div>
+            
+            <div class="card">
+                <div class="card-header">
+                    Patiëntgegevens
+                </div>
+                <div class="card-body">
+                    <form id="add-patient-form" onsubmit="addPatient(event)">
+                        <h3>Persoonsgegevens</h3>
+                        <div class="form-group">
+                            <label for="patient-roepnaam" class="form-label">Roepnaam *</label>
+                            <input type="text" id="patient-roepnaam" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-geboortedatum" class="form-label">Geboortedatum *</label>
+                            <input type="date" id="patient-geboortedatum" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-geslacht" class="form-label">Geslacht</label>
+                            <select id="patient-geslacht" class="form-select">
+                                <option value="">Selecteer geslacht</option>
+                                <option value="Man">Man</option>
+                                <option value="Vrouw">Vrouw</option>
+                                <option value="Anders">Anders</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-patientnummer" class="form-label">Patiëntnummer *</label>
+                            <input type="text" id="patient-patientnummer" class="form-control" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-verzekerdennummer" class="form-label">Verzekerdennummer</label>
+                            <input type="text" id="patient-verzekerdennummer" class="form-control">
+                        </div>
+                        
+                        <h3>Contactgegevens</h3>
+                        <div class="form-group">
+                            <label for="patient-privetelefoon" class="form-label">Privételefoon</label>
+                            <input type="tel" id="patient-privetelefoon" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-werktelefoon" class="form-label">Werktelefoon</label>
+                            <input type="tel" id="patient-werktelefoon" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-mobiel" class="form-label">Mobiel nummer</label>
+                            <input type="tel" id="patient-mobiel" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-faxnummer" class="form-label">Faxnummer</label>
+                            <input type="tel" id="patient-faxnummer" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-email" class="form-label">E-mailadres</label>
+                            <input type="email" id="patient-email" class="form-control">
+                        </div>
+                        
+                        <h3>Verwijzer/huisarts informatie</h3>
+                        <div class="form-group">
+                            <label for="patient-huisarts" class="form-label">Naam huisarts</label>
+                            <input type="text" id="patient-huisarts" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-huisartstelefoon" class="form-label">Telefoonnummer huisarts</label>
+                            <input type="tel" id="patient-huisartstelefoon" class="form-control">
+                        </div>
+                        
+                        <h3>Behandelepisode gegevens</h3>
+                        <div class="form-group">
+                            <label for="patient-begindatum" class="form-label">Begindatum</label>
+                            <input type="date" id="patient-begindatum" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-einddatum" class="form-label">Einddatum</label>
+                            <input type="date" id="patient-einddatum" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-verslagleggingsrichtlijn" class="form-label">Verslagleggingsrichtlijn</label>
+                            <input type="text" id="patient-verslagleggingsrichtlijn" class="form-control">
+                        </div>
+                        
+                        <h3>Verzekeringsgegevens</h3>
+                        <div class="form-group">
+                            <label for="patient-verzekeraar" class="form-label">Verzekeraar</label>
+                            <input type="text" id="patient-verzekeraar" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="patient-zvlsoort" class="form-label">ZVL-soort</label>
+                            <input type="text" id="patient-zvlsoort" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Patiënt toevoegen</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetPatientForm()">Formulier wissen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patiënt bewerken pagina -->
+    <div id="edit-patient-page" class="page" style="display: none;">
+        <div class="container">
+            <h1>Patiënt bewerken</h1>
+            
+            <div id="edit-patient-alerts"></div>
+            
+            <div class="tabs">
+                <div id="persoonsgegevens-tab" class="tab-item active" onclick="activateTab('persoonsgegevens-tab')">Persoonsgegevens</div>
+                <div id="intake-tab" class="tab-item" onclick="activateTab('intake-tab')">1. Intake</div>
+                <div id="onderzoek-tab" class="tab-item" onclick="activateTab('onderzoek-tab')">2. Onderzoek</div>
+                <div id="diagnose-tab" class="tab-item" onclick="activateTab('diagnose-tab')">3. Diagnose</div>
+                <div id="meetinstrumenten-tab" class="tab-item" onclick="activateTab('meetinstrumenten-tab')">4. Meetinstrumenten</div>
+                <div id="behandelplan-tab" class="tab-item" onclick="activateTab('behandelplan-tab')">5. Behandelplan</div>
+                <div id="behandel-tab" class="tab-item" onclick="activateTab('behandel-tab')">6. Behandeling</div>
+                <div id="evaluatie-tab" class="tab-item" onclick="activateTab('evaluatie-tab')">7. Eindevaluatie</div>
+            </div>
+            
+            <!-- Persoonsgegevens tab -->
+            <div id="persoonsgegevens-content" class="tab-content active">
+                <form id="edit-patient-form" onsubmit="updatePatient(event)">
+                    <h3>Persoonsgegevens</h3>
+                    <div class="form-group">
+                        <label for="edit-roepnaam" class="form-label">Roepnaam *</label>
+                        <input type="text" id="edit-roepnaam" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-geboortedatum" class="form-label">Geboortedatum *</label>
+                        <input type="date" id="edit-geboortedatum" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-geslacht" class="form-label">Geslacht</label>
+                        <select id="edit-geslacht" class="form-select">
+                            <option value="">Selecteer geslacht</option>
+                            <option value="Man">Man</option>
+                            <option value="Vrouw">Vrouw</option>
+                            <option value="Anders">Anders</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-patientnummer" class="form-label">Patiëntnummer *</label>
+                        <input type="text" id="edit-patientnummer" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-verzekerdennummer" class="form-label">Verzekerdennummer</label>
+                        <input type="text" id="edit-verzekerdennummer" class="form-control">
+                    </div>
+                    
+                    <h3>Contactgegevens</h3>
+                    <div class="form-group">
+                        <label for="edit-privetelefoon" class="form-label">Privételefoon</label>
+                        <input type="tel" id="edit-privetelefoon" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-werktelefoon" class="form-label">Werktelefoon</label>
+                        <input type="tel" id="edit-werktelefoon" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-mobiel" class="form-label">Mobiel nummer</label>
+                        <input type="tel" id="edit-mobiel" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-faxnummer" class="form-label">Faxnummer</label>
+                        <input type="tel" id="edit-faxnummer" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-email" class="form-label">E-mailadres</label>
+                        <input type="email" id="edit-email" class="form-control">
+                    </div>
+                    
+                    <h3>Verwijzer/huisarts informatie</h3>
+                    <div class="form-group">
+                        <label for="edit-huisarts" class="form-label">Naam huisarts</label>
+                        <input type="text" id="edit-huisarts" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-huisartstelefoon" class="form-label">Telefoonnummer huisarts</label>
+                        <input type="tel" id="edit-huisartstelefoon" class="form-control">
+                    </div>
+                    
+                    <h3>Behandelepisode gegevens</h3>
+                    <div class="form-group">
+                        <label for="edit-begindatum" class="form-label">Begindatum</label>
+                        <input type="date" id="edit-begindatum" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-einddatum" class="form-label">Einddatum</label>
+                        <input type="date" id="edit-einddatum" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-verslagleggingsrichtlijn" class="form-label">Verslagleggingsrichtlijn</label>
+                        <input type="text" id="edit-verslagleggingsrichtlijn" class="form-control">
+                    </div>
+                    
+                    <h3>Verzekeringsgegevens</h3>
+                    <div class="form-group">
+                        <label for="edit-verzekeraar" class="form-label">Verzekeraar</label>
+                        <input type="text" id="edit-verzekeraar" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-zvlsoort" class="form-label">ZVL-soort</label>
+                        <input type="text" id="edit-zvlsoort" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Intake tab -->
+            <div id="intake-content" class="tab-content">
+                <form id="intake-form" onsubmit="updateIntakeFase(event)">
+                    <h3>Algemeen</h3>
+                    <div class="form-group">
+                        <label for="edit-binnenkomst" class="form-label">Binnenkomst</label>
+                        <select id="edit-binnenkomst" class="form-select">
+                            <option value="">Selecteer binnenkomst</option>
+                            <option value="Directe toegankelijkheid">Directe toegankelijkheid</option>
+                            <option value="Verwijzing huisarts">Verwijzing huisarts</option>
+                            <option value="Verwijzing specialist">Verwijzing specialist</option>
+                            <option value="Anders">Anders</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-praktijk-gevonden" class="form-label">Praktijk gevonden via</label>
+                        <input type="text" id="edit-praktijk-gevonden" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-omschrijving-klacht" class="form-label">Omschrijving klacht</label>
+                        <textarea id="edit-omschrijving-klacht" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-klacht-categorie" class="form-label">Klacht categorie</label>
+                        <select id="edit-klacht-categorie" class="form-select">
+                            <option value="">Selecteer categorie</option>
+                            <option value="Bovenste extremiteit">Bovenste extremiteit</option>
+                            <option value="Onderste extremiteit">Onderste extremiteit</option>
+                            <option value="Wervelkolom">Wervelkolom</option>
+                            <option value="Neurologisch">Neurologisch</option>
+                            <option value="Cardiovasculair">Cardiovasculair</option>
+                            <option value="Pulmonaal">Pulmonaal</option>
+                            <option value="Anders">Anders</option>
+                        </select>
+                    </div>
+                    
+                    <h3>Verwijsgegevens</h3>
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-dtf" class="form-check-input">
+                            <label for="edit-dtf" class="form-check-label">Directe Toegankelijkheid Fysiotherapie (DTF)</label>
+                        </div>
+                    </div>
+                    
+                    <h3>Anamnese</h3>
+                    <div class="form-group">
+                        <label for="edit-hulpvraag" class="form-label">Hulpvraag/contactreden</label>
+                        <textarea id="edit-hulpvraag" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-ontstaanswijze" class="form-label">Ontstaanswijze/historie</label>
+                        <textarea id="edit-ontstaanswijze" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-beloop" class="form-label">Beloop</label>
+                        <select id="edit-beloop" class="form-select">
+                            <option value="">Selecteer beloop</option>
+                            <option value="Toegenomen">Toegenomen</option>
+                            <option value="Afgenomen">Afgenomen</option>
+                            <option value="Stabiel">Stabiel</option>
+                            <option value="Wisselend">Wisselend</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-duur-klacht" class="form-label">Duur klacht</label>
+                        <select id="edit-duur-klacht" class="form-select">
+                            <option value="">Selecteer duur</option>
+                            <option value="Dagen">Dagen</option>
+                            <option value="Weken">Weken</option>
+                            <option value="Maanden">Maanden</option>
+                            <option value="Jaren">Jaren</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-aangedane-zijde" class="form-label">Aangedane zijde</label>
+                        <select id="edit-aangedane-zijde" class="form-select">
+                            <option value="">Selecteer zijde</option>
+                            <option value="Links">Links</option>
+                            <option value="Rechts">Rechts</option>
+                            <option value="Bilateraal">Bilateraal</option>
+                            <option value="Niet van toepassing">Niet van toepassing</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-stoornissen" class="form-label">Stoornissen in functie</label>
+                        <textarea id="edit-stoornissen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-beperkingen" class="form-label">Beperkingen in activiteiten</label>
+                        <textarea id="edit-beperkingen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-participatieproblemen" class="form-label">Participatieproblemen</label>
+                        <textarea id="edit-participatieproblemen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <h3>Resultaat screening</h3>
+                    <div class="form-group">
+                        <label for="edit-resultaat-screening" class="form-label">Resultaat screening (vlaggen)</label>
+                        <textarea id="edit-resultaat-screening" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-conclusie-screening" class="form-label">Conclusie screening</label>
+                        <select id="edit-conclusie-screening" class="form-select">
+                            <option value="">Selecteer conclusie</option>
+                            <option value="Pluis">Pluis</option>
+                            <option value="Niet pluis">Niet pluis</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-indicatie-fysiotherapie" class="form-check-input">
+                            <label for="edit-indicatie-fysiotherapie" class="form-check-label">Indicatie verder fysiotherapeutisch handelen</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-toestemming-contact" class="form-check-input">
+                            <label for="edit-toestemming-contact" class="form-check-label">Toestemming patiënt voor contact/verstrekken/opvragen gegevens</label>
+                        </div>
+                    </div>
+                    
+                    <h3>Aanvullende anamnese</h3>
+                    <div class="form-group">
+                        <label for="edit-herstel-factoren" class="form-label">Herstel beïnvloedende factoren</label>
+                        <textarea id="edit-herstel-factoren" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-voorgeschiedenis" class="form-label">(Medische) voorgeschiedenis</label>
+                        <textarea id="edit-voorgeschiedenis" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-nevenpathologie" class="form-label">Nevenpathologie</label>
+                        <textarea id="edit-nevenpathologie" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-eerdere-aandoeningen" class="form-label">Eerdere aandoeningen</label>
+                        <textarea id="edit-eerdere-aandoeningen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-erfelijke-aandoeningen" class="form-label">Erfelijke aandoeningen</label>
+                        <textarea id="edit-erfelijke-aandoeningen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-medische-verrichtingen" class="form-label">Medische verrichtingen</label>
+                        <textarea id="edit-medische-verrichtingen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-datum-trauma" class="form-label">Datum trauma (indien van toepassing)</label>
+                        <input type="date" id="edit-datum-trauma" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-operatiedatum" class="form-label">Operatiedatum (indien van toepassing)</label>
+                        <input type="date" id="edit-operatiedatum" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-medicatiegebruik" class="form-label">Medicatiegebruik</label>
+                        <textarea id="edit-medicatiegebruik" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-recidief" class="form-check-input">
+                            <label for="edit-recidief" class="form-check-label">Recidief</label>
+                        </div>
+                    </div>
+                    
+                    <h3>Omgevingsfactoren en persoonlijke factoren</h3>
+                    <div class="form-group">
+                        <label for="edit-omgevingsfactoren" class="form-label">Omgevingsfactoren</label>
+                        <textarea id="edit-omgevingsfactoren" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-persoonlijke-factoren" class="form-label">Persoonlijke factoren</label>
+                        <textarea id="edit-persoonlijke-factoren" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-voorlopige-conclusie" class="form-label">Voorlopige conclusie/hypothese(n)</label>
+                        <textarea id="edit-voorlopige-conclusie" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Onderzoek tab -->
+            <div id="onderzoek-content" class="tab-content">
+                <form id="onderzoek-form" onsubmit="updateOnderzoeksFase(event)">
+                    <div class="form-group">
+                        <label for="edit-onderzoek-voorlopige-conclusie" class="form-label">Voorlopige conclusie/hypothese(n)</label>
+                        <textarea id="edit-onderzoek-voorlopige-conclusie" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-toestemming-onderzoek" class="form-check-input">
+                            <label for="edit-toestemming-onderzoek" class="form-check-label">Toestemming voor bijzondere of voorbehouden handeling (onderzoek)</label>
+                        </div>
+                    </div>
+                    
+                    <h3>Onderzoek</h3>
+                    <div class="form-group">
+                        <label for="edit-inspectie" class="form-label">Inspectie/observatie</label>
+                        <textarea id="edit-inspectie" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-palpatie" class="form-label">Palpatie, percussie, auscultatie</label>
+                        <textarea id="edit-palpatie" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-tests" class="form-label">Uitvoering tests en metingen</label>
+                        <textarea id="edit-tests" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-overig-onderzoek" class="form-label">Overig</label>
+                        <textarea id="edit-overig-onderzoek" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-conclusie-onderzoek" class="form-label">Conclusie onderzoek</label>
+                        <textarea id="edit-conclusie-onderzoek" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-behandelbare-grootheden" class="form-label">Behandelbare grootheden</label>
+                        <textarea id="edit-behandelbare-grootheden" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Diagnose tab -->
+            <div id="diagnose-content" class="tab-content">
+                <form id="diagnose-form" onsubmit="updateDiagnoseFase(event)">
+                    <div class="form-group">
+                        <label for="edit-fysiotherapeutische-diagnose" class="form-label">Fysiotherapeutische diagnose</label>
+                        <textarea id="edit-fysiotherapeutische-diagnose" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-verwijsdiagnosecode" class="form-label">(Verwijs)diagnosecode</label>
+                        <input type="text" id="edit-verwijsdiagnosecode" class="form-control" placeholder="bijv. 003026">
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-indicatie-fysiotherapie-diagnose" class="form-check-input">
+                            <label for="edit-indicatie-fysiotherapie-diagnose" class="form-check-label">Indicatie voor fysiotherapie</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-behandelen-richtlijn" class="form-check-input">
+                            <label for="edit-behandelen-richtlijn" class="form-check-label">Behandelen conform richtlijn</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-bijzonderheden-diagnose" class="form-label">Bijzonderheden</label>
+                        <textarea id="edit-bijzonderheden-diagnose" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Meetinstrumenten tab -->
+            <div id="meetinstrumenten-content" class="tab-content">
+                <form id="meetinstrumenten-form" onsubmit="updateMeetinstrumenten(event)">
+                    <div class="form-group">
+                        <label for="edit-nrs-pijn" class="form-label">NRS Pijn (NPRS) - score 0-10</label>
+                        <input type="number" id="edit-nrs-pijn" class="form-control" min="0" max="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-vas-pijn" class="form-label">VAS Pijn/stijfheid</label>
+                        <input type="text" id="edit-vas-pijn" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-psk10" class="form-label">Patiënt Specifieke Klachten (PSK10)</label>
+                        <textarea id="edit-psk10" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-algofunctional" class="form-label">Algofunctional Index Artrose - Knie (indien van toepassing)</label>
+                        <textarea id="edit-algofunctional" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Behandelplan tab -->
+            <div id="behandelplan-content" class="tab-content">
+                <form id="behandelplan-form" onsubmit="updateBehandelplanFase(event)">
+                    <h3>Doelen en verrichtingen</h3>
+                    <div class="form-group">
+                        <label for="edit-plan-hulpvraag" class="form-label">Hulpvraag/contactreden</label>
+                        <textarea id="edit-plan-hulpvraag" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-verwachtingen" class="form-label">Verwachtingen</label>
+                        <textarea id="edit-verwachtingen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-verwacht-herstel" class="form-label">Verwacht herstel in tijd</label>
+                        <input type="text" id="edit-verwacht-herstel" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-hoofddoel" class="form-label">Hoofddoel</label>
+                        <textarea id="edit-hoofddoel" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-toestemming-behandelplan" class="form-check-input">
+                            <label for="edit-toestemming-behandelplan" class="form-check-label">Toestemming patiënt (akkoord met behandelplan)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-toestemming-behandeling" class="form-check-input">
+                            <label for="edit-toestemming-behandeling" class="form-check-label">Toestemming bijzondere of voorbehouden handeling (behandelingen)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-behandelplantabel" class="form-label">Behandelplantabel met subdoelen</label>
+                        <textarea id="edit-behandelplantabel" class="form-control" rows="5"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-toelichting-plan" class="form-label">Toelichting</label>
+                        <textarea id="edit-toelichting-plan" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Behandeling tab -->
+            <div id="behandel-content" class="tab-content">
+                <h3>Behandelsessies</h3>
+                <div id="behandelsessies-container">
+                    <!-- Behandelsessies worden hier dynamisch ingevuld -->
+                </div>
+                
+                <h3>Nieuwe behandelsessie toevoegen</h3>
+                <form id="behandelsessie-form" onsubmit="addBehandelsessie(event)">
+                    <div class="form-group">
+                        <label for="edit-behandel-datum" class="form-label">Datum *</label>
+                        <input type="date" id="edit-behandel-datum" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-subjectief" class="form-label">(S)ubjectief/bevindingen patiënt</label>
+                        <textarea id="edit-subjectief" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-objectief" class="form-label">(O)bjectief/bevindingen therapeut</label>
+                        <textarea id="edit-objectief" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-analyse" class="form-label">(A)nalyse/conclusie bevindingen</label>
+                        <textarea id="edit-analyse" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-plan" class="form-label">(P)lan van aanpak/uitgevoerde behandeling</label>
+                        <textarea id="edit-plan" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-afspraken" class="form-label">Afspraken met patiënt</label>
+                        <textarea id="edit-afspraken" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Behandelsessie toevoegen</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Eindevaluatie tab -->
+            <div id="evaluatie-content" class="tab-content">
+                <form id="evaluatie-form" onsubmit="updateEindevaluatieFase(event)">
+                    <h3>Doelen en verrichtingen</h3>
+                    <div class="form-group">
+                        <label for="edit-evaluatie-hoofddoel" class="form-label">Hoofddoel</label>
+                        <textarea id="edit-evaluatie-hoofddoel" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-evaluatie-behandelplantabel" class="form-label">Behandelplantabel</label>
+                        <textarea id="edit-evaluatie-behandelplantabel" class="form-control" rows="5"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="edit-patient-aanwezigheid" class="form-check-input">
+                            <label for="edit-patient-aanwezigheid" class="form-check-label">Patiënt aanwezigheid</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-eindmeting" class="form-label">Eindmeting toevoegen</label>
+                        <textarea id="edit-eindmeting" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-resultaat" class="form-label">Resultaat</label>
+                        <select id="edit-resultaat" class="form-select">
+                            <option value="">Selecteer resultaat</option>
+                            <option value="Behandeldoel behaald">Behandeldoel behaald</option>
+                            <option value="Behandeldoel deels behaald">Behandeldoel deels behaald</option>
+                            <option value="Behandeldoel niet behaald">Behandeldoel niet behaald</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-afwijkingen" class="form-label">Afwijkingen verwacht behandelbeloop</label>
+                        <textarea id="edit-afwijkingen" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-oordeel" class="form-label">Oordeel over behandelbeloop</label>
+                        <textarea id="edit-oordeel" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <h3>Afsluiting</h3>
+                    <div class="form-group">
+                        <label for="edit-aanbeveling-huisarts" class="form-label">Aanbeveling vervolg huisarts</label>
+                        <textarea id="edit-aanbeveling-huisarts" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-doorverwezen" class="form-label">Doorverwezen naar</label>
+                        <input type="text" id="edit-doorverwezen" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-reden-einde" class="form-label">Reden einde zorg</label>
+                        <select id="edit-reden-einde" class="form-select">
+                            <option value="">Selecteer reden</option>
+                            <option value="Behandeldoel behaald">Behandeldoel behaald</option>
+                            <option value="Maximaal resultaat bereikt">Maximaal resultaat bereikt</option>
+                            <option value="Patiënt gestopt">Patiënt gestopt</option>
+                            <option value="Doorverwezen">Doorverwezen</option>
+                            <option value="Anders">Anders</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-nazorg" class="form-label">Gegevens nazorg/afspraken met patiënt</label>
+                        <textarea id="edit-nazorg" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-einddatum-evaluatie" class="form-label">Einddatum behandelepisode</label>
+                        <input type="date" id="edit-einddatum-evaluatie" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-bijzonderheden-evaluatie" class="form-label">Bijzonderheden</label>
+                        <textarea id="edit-bijzonderheden-evaluatie" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <a href="#" class="btn btn-secondary" data-target="patients">Terug naar patiëntenoverzicht</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
