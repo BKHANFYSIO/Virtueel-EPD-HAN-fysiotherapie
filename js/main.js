@@ -115,6 +115,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Backup info modal
+    const backupInfoBtn = document.getElementById('backup-info-btn');
+    const backupModal = document.getElementById('backup-modal');
+    const backupModalClose = document.getElementById('backup-modal-close');
+    if (backupInfoBtn && backupModal) {
+        const openModal = () => { backupModal.classList.add('active'); backupModal.setAttribute('aria-hidden', 'false'); };
+        const closeModal = () => { backupModal.classList.remove('active'); backupModal.setAttribute('aria-hidden', 'true'); };
+        backupInfoBtn.addEventListener('click', openModal);
+        if (backupModalClose) backupModalClose.addEventListener('click', closeModal);
+        backupModal.addEventListener('click', (e) => { if (e.target === backupModal) closeModal(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    }
+
+    // Opslaan en volgend tabblad knoppen
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.save-next-btn');
+        if (!btn) return;
+        const nextTabId = btn.getAttribute('data-next-tab');
+        // Zorg dat bovenaan zichtbaar is
+        if (typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        }
+        if (nextTabId) {
+            // Activeer het volgende tabblad na korte delay om UI te laten updaten
+            setTimeout(() => activateTab(nextTabId), 150);
+        }
+    });
 });
 
 // Navigatie functie
@@ -327,6 +355,7 @@ function renderPatientList() {
             <div class="patient-actions">
                 <button class="btn btn-primary btn-edit" data-index="${index}">Bewerk dossier</button>
                 <button class="btn btn-success btn-pdf" data-index="${index}">PDF Genereren</button>
+                <button class="btn btn-danger btn-delete" data-index="${index}">Verwijder dossier</button>
             </div>
         `;
         patientListElement.appendChild(patientItem);
@@ -347,6 +376,24 @@ function renderPatientList() {
         });
     });
     
+    // Verwijderen met bevestiging
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const indexStr = e.target.getAttribute('data-index');
+            const index = Number(indexStr);
+            const p = patients[index];
+            const name = p ? `${p.roepnaam || ''} ${p.achternaam || ''}`.trim() : '';
+            const ok = confirm(`Weet je zeker dat je dit dossier wilt verwijderen${name ? ` (\"${name}\")` : ''}? Dit kan niet ongedaan worden gemaakt.`);
+            if (!ok) return;
+            if (index >= 0 && index < patients.length) {
+                patients.splice(index, 1);
+                savePatients();
+                renderPatientList();
+                showAlert('Dossier verwijderd.', 'success', 'patient-list-alerts');
+            }
+        });
+    });
+    
     // (Listener voor 'Nieuwe patiënt toevoegen' is eerder al gebonden)
 }
 
@@ -358,6 +405,7 @@ function addPatient(event) {
     const patientData = {
         // Persoonsgegevens
         roepnaam: document.getElementById('patient-roepnaam').value.trim(),
+        achternaam: document.getElementById('patient-achternaam').value.trim(),
         geboortedatum: document.getElementById('patient-geboortedatum').value,
         geslacht: document.getElementById('patient-geslacht').value,
         patientnummer: document.getElementById('patient-patientnummer').value.trim(),
@@ -394,7 +442,7 @@ function addPatient(event) {
     };
     
     // Valideer verplichte velden
-    if (!patientData.roepnaam || !patientData.geboortedatum || !patientData.patientnummer) {
+    if (!patientData.roepnaam || !patientData.achternaam || !patientData.geboortedatum || !patientData.patientnummer) {
         showAlert('Vul alle verplichte velden in.', 'warning', 'add-patient-alerts');
         return;
     }
@@ -411,6 +459,8 @@ function addPatient(event) {
     // Toon bevestiging op de bewerkpagina
     setTimeout(() => {
         showAlert('Patiënt succesvol toegevoegd. Je kunt nu gegevens bewerken.', 'success', 'edit-patient-alerts');
+        // Open direct de Intake tab
+        activateTab('intake-tab');
     }, 0);
 }
 
@@ -425,12 +475,29 @@ function editPatient(index) {
     
     // Navigeer naar bewerk pagina
     navigateTo('edit-patient');
+    // Scroll volledig naar boven zodat header, menu en waarschuwing zichtbaar zijn
+    setTimeout(() => {
+        if (typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        } else if (document.documentElement) {
+            document.documentElement.scrollTop = 0;
+        } else if (document.body) {
+            document.body.scrollTop = 0;
+        }
+    }, 0);
     
     // Vul formulier met patiëntgegevens
     fillPatientForm();
     
     // Activeer eerste tab
     activateTab('persoonsgegevens-tab');
+
+    // Waarschuw als achternaam ontbreekt in oudere dossiers
+    if (!currentPatient.achternaam || currentPatient.achternaam.trim() === '') {
+        setTimeout(() => {
+            showAlert('Dit dossier mist een achternaam. Vul deze aan bij Persoonsgegevens.', 'warning', 'edit-patient-alerts');
+        }, 200);
+    }
 }
 
 // Vul patiëntformulier met gegevens
@@ -439,6 +506,10 @@ function fillPatientForm() {
     
     // Persoonsgegevens
     document.getElementById('edit-roepnaam').value = currentPatient.roepnaam || '';
+    const editAchternaamEl = document.getElementById('edit-achternaam');
+    if (editAchternaamEl) {
+        editAchternaamEl.value = currentPatient.achternaam || '';
+    }
     document.getElementById('edit-geboortedatum').value = currentPatient.geboortedatum || '';
     document.getElementById('edit-geslacht').value = currentPatient.geslacht || '';
     document.getElementById('edit-patientnummer').value = currentPatient.patientnummer || '';
@@ -678,6 +749,7 @@ function updatePatient(event) {
     
     // Update persoonsgegevens
     currentPatient.roepnaam = document.getElementById('edit-roepnaam').value.trim();
+    currentPatient.achternaam = document.getElementById('edit-achternaam').value.trim();
     currentPatient.geboortedatum = document.getElementById('edit-geboortedatum').value;
     currentPatient.geslacht = document.getElementById('edit-geslacht').value;
     currentPatient.patientnummer = document.getElementById('edit-patientnummer').value.trim();
@@ -708,6 +780,10 @@ function updatePatient(event) {
     
     // Toon bevestiging
     showAlert('Patiëntgegevens succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    // Scroll helemaal naar boven
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Update Intake fase
@@ -770,6 +846,9 @@ function updateIntakeFase(event) {
     
     // Toon bevestiging
     showAlert('Intake fase succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Update Onderzoeksfase
@@ -801,6 +880,9 @@ function updateOnderzoeksFase(event) {
     
     // Toon bevestiging
     showAlert('Onderzoeksfase succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Update Diagnosefase
@@ -827,6 +909,9 @@ function updateDiagnoseFase(event) {
     
     // Toon bevestiging
     showAlert('Diagnosefase succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Update Meetinstrumenten
@@ -852,6 +937,9 @@ function updateMeetinstrumenten(event) {
     
     // Toon bevestiging
     showAlert('Meetinstrumenten succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Update Behandelplanfase
@@ -882,6 +970,9 @@ function updateBehandelplanFase(event) {
     
     // Toon bevestiging
     showAlert('Behandelplanfase succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Voeg behandelsessie toe
@@ -925,6 +1016,9 @@ function addBehandelsessie(event) {
     
     // Werk behandelsessies lijst bij
     fillBehandelFase();
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Update Eindevaluatiefase
@@ -961,10 +1055,13 @@ function updateEindevaluatieFase(event) {
     
     // Toon bevestiging
     showAlert('Eindevaluatiefase succesvol bijgewerkt.', 'success', 'edit-patient-alerts');
+    if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
 }
 
 // Genereer PDF
-function generatePDF(index) {
+async function generatePDF(index) {
     const patient = patients[index];
     if (!patient) return;
     
@@ -979,13 +1076,88 @@ function generatePDF(index) {
         doc.setFontSize(18);
         doc.setTextColor(230, 0, 126); // HAN magenta
         doc.text('Patiëntendossier Fysiotherapie', 105, 20, { align: 'center' });
-        
-        // Voeg therapeut info toe
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`Therapeut: ${currentUser.fullName}`, 14, 30);
-        doc.text(`COP: ${currentUser.cop}`, 14, 37);
-        doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 14, 44);
+
+        // Logo rechtsboven met correcte verhouding
+        async function loadImageWithDims(src) {
+            try {
+                const res = await fetch(src);
+                const blob = await res.blob();
+                const dataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                const img = new Image();
+                const dims = await new Promise((resolve) => {
+                    img.onload = () => resolve({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
+                    img.onerror = () => resolve(null);
+                    img.src = dataUrl;
+                });
+                if (!dims) return null;
+                return { dataUrl, width: dims.w, height: dims.h };
+            } catch (_) {
+                return null;
+            }
+        }
+
+        const logo = await loadImageWithDims('img/HAN_logo1a.png');
+        let lineY = 24; // default positie van scheidingslijn onder de titel
+        if (logo) {
+            const pageWidth = 210; // A4 mm
+            const margin = 14;
+            const maxW = 46; // groter logo
+            const maxH = 18; // iets hogere limiet
+            let drawW = maxW;
+            let drawH = (logo.height / logo.width) * drawW;
+            if (drawH > maxH) { drawH = maxH; drawW = (logo.width / logo.height) * drawH; }
+            const x = pageWidth - margin - drawW;
+            const y = 10;
+            try { doc.addImage(logo.dataUrl, 'PNG', x, y, drawW, drawH); } catch (_) {}
+            // Plaats scheidingslijn altijd onder de onderkant van het logo
+            lineY = Math.max(lineY, y + drawH + 2);
+        }
+
+        // Scheidingslijn onder titel
+        doc.setDrawColor(230, 0, 126);
+        doc.setLineWidth(0.5);
+        doc.line(14, lineY, 196, lineY);
+
+        // Korte toelichting (ruim onder de titel)
+        const scale = doc.internal && doc.internal.scaleFactor ? doc.internal.scaleFactor : 1;
+        const lh = (10 * (typeof doc.getLineHeightFactor === 'function' ? doc.getLineHeightFactor() : 1.15)) / scale;
+        doc.setFontSize(10);
+        doc.setTextColor(80, 80, 80);
+        const infoText = 'Dit dossier is gegenereerd vanuit het Virtuele EPD van de opleiding Fysiotherapie (HAN). Gebruik uitsluitend fictieve en niet-herleidbare persoonsgegevens.';
+        const infoLines = doc.splitTextToSize(infoText, 180);
+        const infoY = lineY + 6; // ruimte t.o.v. scheidingslijn
+        doc.text(infoLines, 14, infoY);
+        let afterInfoY = infoY + (infoLines.length * lh) + 4;
+
+        // Professionele infobox met meta-gegevens
+        const boxX = 14, boxW = 182, rowLH = (12 * (typeof doc.getLineHeightFactor === 'function' ? doc.getLineHeightFactor() : 1.15)) / scale, pad = 3;
+        const rows = 3; // Therapeut, COP, Datum
+        const boxH = rows * rowLH + pad * 2;
+        doc.setFillColor(245, 245, 245);
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(boxX, afterInfoY, boxW, boxH, 'FD');
+
+        // Labels en waarden
+        const labelX = boxX + pad + 1;
+        const valueX = boxX + 55;
+        let metaY = afterInfoY + pad + rowLH - 1;
+        doc.setFontSize(11);
+        // Rij 1
+        doc.setTextColor(230, 0, 126); doc.setFont(undefined, 'bold'); doc.text('Therapeut', labelX, metaY);
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.text(`${currentUser.fullName}`, valueX, metaY);
+        // Rij 2
+        metaY += rowLH;
+        doc.setTextColor(230, 0, 126); doc.setFont(undefined, 'bold'); doc.text('COP', labelX, metaY);
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.text(`${currentUser.cop}`, valueX, metaY);
+        // Rij 3
+        metaY += rowLH;
+        doc.setTextColor(230, 0, 126); doc.setFont(undefined, 'bold'); doc.text('Datum', labelX, metaY);
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, 'normal'); doc.text(`${new Date().toLocaleDateString('nl-NL')}`, valueX, metaY);
         
         // Functie om veld toe te voegen met label en automatisch afbreken (word-wrap)
         function addField(label, value, x, y, maxWidth) {
@@ -998,11 +1170,11 @@ function generatePDF(index) {
             const lineHeightFactor = typeof doc.getLineHeightFactor === 'function' ? doc.getLineHeightFactor() : 1.15;
             const scale = doc.internal && doc.internal.scaleFactor ? doc.internal.scaleFactor : 1;
             const lineHeight = (fontSize * lineHeightFactor) / scale;
-            const labelSpacing = lineHeight + 2; // extra ruimte onder label
-            const padding = 2.5;
-            const textHeight = hasValue ? wrappedLines.length * lineHeight : 0;
-            const valueBlockHeight = hasValue ? (textHeight + padding * 2) : 0;
-            const requiredHeight = labelSpacing + valueBlockHeight + 2;
+            const labelSpacing = 2; // minimale ruimte direct onder label
+            const padding = 3; // padding binnen het kader
+            const textHeight = hasValue ? (wrappedLines.length * lineHeight) : lineHeight; // lege veld = 1 regel
+            const rectHeight = textHeight + padding * 2;
+            const requiredHeight = labelSpacing + rectHeight + 2;
 
             // Paginabreuk indien nodig vóór tekenen
             if (y + requiredHeight > 270) {
@@ -1016,21 +1188,20 @@ function generatePDF(index) {
             doc.text(label, x, y);
 
             // Waarde (met achtergrond en wrapping)
-            let nextY = y + labelSpacing;
+            const rectTop = y + labelSpacing; // kader begint direct na labelruimte
             doc.setTextColor(0, 0, 0);
             doc.setFont(undefined, 'normal');
 
+            const bgColor = hasValue ? [240, 248, 255] : [245, 245, 245];
+            doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+            doc.setDrawColor(230, 230, 230);
+            doc.rect(x - 2, rectTop, maxWidth, rectHeight, 'FD');
             if (hasValue) {
-                // Achtergrond exact passend aan tekstblokhoogte
-                doc.setFillColor(240, 248, 255);
-                doc.rect(x - 2, nextY - padding, maxWidth, valueBlockHeight, 'F');
-                doc.text(wrappedLines, x, nextY, { maxWidth: maxWidth - 6 });
-                nextY += textHeight + padding + 3; // iets extra marge onder blok
-            } else {
-                nextY += lineHeight + 1;
+                const textY = rectTop + padding + lineHeight * 0.85; // baseline iets onder de bovenrand
+                doc.text(wrappedLines, x, textY, { maxWidth: maxWidth - 6 });
             }
-
-            return nextY;
+            const fieldGap = 8; // extra ruimte onder elk veld voor duidelijkheid
+            return rectTop + rectHeight + fieldGap;
         }
         
         // Functie om sectieheader toe te voegen
@@ -1065,18 +1236,20 @@ function generatePDF(index) {
             return y;
         }
         
-        // Voeg patiëntgegevens toe
-        let yPos = addSectionHeader('Patiëntgegevens', 14, 55);
+        // Voeg patiëntgegevens toe (start onder de meta-infobox)
+        const patientHeaderStart = Math.max(afterInfoY + boxH + 10, 55);
+        let yPos = addSectionHeader('Patiëntgegevens', 14, patientHeaderStart);
         
         // Persoonsgegevens
         yPos = addField('Roepnaam', patient.roepnaam, 14, yPos, 80);
+        yPos = addField('Achternaam', patient.achternaam, 14, yPos, 80);
         yPos = addField('Geboortedatum', patient.geboortedatum, 14, yPos, 80);
         yPos = addField('Geslacht', patient.geslacht, 14, yPos, 80);
         yPos = addField('Patiëntnummer', patient.patientnummer, 14, yPos, 80);
         yPos = addField('Verzekerdennummer', patient.verzekerdennummer, 14, yPos, 80);
         
         // Contactgegevens
-        let rightColY = 55 + 7; // Start op dezelfde hoogte als de linkerkolom na de header
+        let rightColY = patientHeaderStart + 7; // Start op dezelfde hoogte als de linkerkolom na de header
         rightColY = addField('Privételefoon', patient.privételefoon, 120, rightColY, 80);
         rightColY = addField('Werktelefoon', patient.werktelefoon, 120, rightColY, 80);
         rightColY = addField('Mobiel', patient.mobiel, 120, rightColY, 80);
@@ -1089,8 +1262,10 @@ function generatePDF(index) {
         
         // Gebruik de hoogste y-waarde voor de volgende sectie
         yPos = Math.max(yPos, rightColY) + 5;
-        
-        // Voeg behandelepisode toe
+
+        // Behandelepisode start altijd op nieuwe pagina
+        doc.addPage();
+        yPos = 20;
         yPos = addSectionHeader('Behandelepisode', 14, yPos);
         
         yPos = addField('Begindatum', patient.begindatum, 14, yPos, 80);
@@ -1104,8 +1279,10 @@ function generatePDF(index) {
         
         // Gebruik de hoogste y-waarde voor de volgende sectie
         yPos = Math.max(yPos, rightColY) + 10;
-        
-        // Voeg intakefase toe
+
+        // 1. Intake fase start altijd op nieuwe pagina
+        doc.addPage();
+        yPos = 20;
         yPos = addSectionHeader('1. Intake fase', 14, yPos);
         
         // Algemeen
@@ -1288,6 +1465,17 @@ function generatePDF(index) {
         yPos = addField('Einddatum behandelepisode', evaluatie.einddatum, 14, yPos, 180);
         yPos = addField('Bijzonderheden', evaluatie.bijzonderheden, 14, yPos, 180);
         
+        // Voeg paginanummers toe (voetregel)
+        try {
+            const pageCount = typeof doc.getNumberOfPages === 'function' ? doc.getNumberOfPages() : (doc.internal && doc.internal.getNumberOfPages ? doc.internal.getNumberOfPages() : 1);
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(9);
+                doc.setTextColor(120, 120, 120);
+                doc.text(`${i} van ${pageCount}`, 105, 290, { align: 'center' });
+            }
+        } catch (_) {}
+
         // Sla het PDF-document op
         doc.save(`Patientendossier_${patient.roepnaam || 'Patient'}_${patient.patientnummer || ''}.pdf`);
         

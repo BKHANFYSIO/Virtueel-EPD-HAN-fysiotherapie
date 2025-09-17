@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Virtueel EPD - Fysiotherapie</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/x-icon" href="img/favicon-HAN.ico">
+    <link rel="shortcut icon" href="img/favicon-HAN.ico">
 </head>
 <body>
     <!-- Header -->
@@ -21,7 +23,7 @@
     <!-- Waarschuwingsbalk -->
     <div class="warning-banner">
         <div class="container">
-            <strong>Waarschuwing:</strong> Gegevens die je invult worden lokaal in de browser op jouw device opgeslagen (local storage). Ze blijven bewaard zolang dit lokale geheugen niet wordt geleegd; dit kan soms per ongeluk gebeuren. Het is verstandig regelmatig een PDF te genereren en te bewaren. Vul om privacyredenen (AVG) geen echte patiënt-/persoonsgegevens in.
+            <strong>Waarschuwing:</strong> Gegevens die je invult worden lokaal in de browser op jouw device opgeslagen (local storage). Ze blijven bewaard zolang dit lokale geheugen niet wordt geleegd; dit kan soms per ongeluk gebeuren. Het is verstandig regelmatig een backup te makeen en te bewaren. Vul om privacyredenen (AVG) geen echte patiënt-/persoonsgegevens in. Ook al wordt het lokaal opgeslagen. 
         </div>
     </div>
 
@@ -103,8 +105,8 @@
                         <li>Gegevens worden uitsluitend lokaal opgeslagen in jouw browser (local storage) op je eigen device; er wordt niets naar een server verzonden.</li>
                         <li>Stap je over naar een ander device of een andere browser, dan zie je jouw eerder ingevulde gegevens niet.</li>
                         <li>Docenten hebben geen toegang tot jouw lokaal opgeslagen gegevens.</li>
-                        <li>Delen is alleen mogelijk door een PDF van het patiëntendossier te genereren en die te bewaren of te versturen.</li>
-                        <li>Let op: als het lokale geheugen wordt geleegd (bijv. door opschonen), kun je gegevens verliezen. Maak daarom regelmatig een PDF-back-up.</li>
+                        <li>Delen is alleen mogelijk door een PDF van het patiëntendossier te genereren en die te delen, bijvoorbeeld in eJournal.</li>
+                        <li>Let op: als het lokale geheugen wordt geleegd (bijv. door opschonen), kun je gegevens verliezen. Maak daarom ook regelmatig een back-up. Dit doe je in het patiëntenoverzicht via de knop “Backup maken”.</li>
                     </ul>
                 </div>
                     <p>Gebruik de navigatiebalk bovenaan om tussen de verschillende onderdelen te navigeren:</p>
@@ -152,10 +154,32 @@
                     </div>
                 </div>
                 <div class="card-footer">
-                    <a href="#" class="btn btn-primary" data-target="add-patient">Nieuwe patiënt toevoegen</a>
-                    <button type="button" id="backup-download-btn" class="btn btn-secondary" style="margin-left: 10px;">Maak backup</button>
-                    <label for="backup-upload-input" class="btn btn-warning" style="margin-left: 10px;">Backup terugzetten</label>
-                    <input type="file" id="backup-upload-input" accept="application/json" style="display:none" />
+                    <div class="footer-actions">
+                        <a href="#" class="btn btn-primary" data-target="add-patient">Nieuwe patiënt toevoegen</a>
+                        <div class="backup-controls">
+                            <button type="button" id="backup-download-btn" class="btn btn-secondary">Backup maken</button>
+                            <label for="backup-upload-input" class="btn btn-warning">Backup terugzetten</label>
+                            <input type="file" id="backup-upload-input" accept="application/json" style="display:none" />
+                            <button type="button" id="backup-info-btn" class="btn btn-info" title="Uitleg over backups">i</button>
+                        </div>
+                    </div>
+                    <!-- Modal voor backup-uitleg -->
+                    <div id="backup-modal" class="modal-overlay" aria-hidden="true">
+                        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="backup-modal-title">
+                            <div class="modal-header">
+                                <h3 id="backup-modal-title" style="margin:0;">Uitleg back-ups</h3>
+                                <button type="button" class="modal-close" id="backup-modal-close" aria-label="Sluiten">×</button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Gegevens worden lokaal in je browser opgeslagen. Maak regelmatig een back-up (JSON-bestand) voor de zekerheid.</p>
+                                <ul>
+                                    <li>Terugzetten voegt standaard samen met bestaande dossiers (duplicaten worden voorkomen op basis van patiëntnummer of roepnaam + geboortedatum).</li>
+                                    <li>Wil je alles vervangen? Kies dan expliciet voor “Alles vervangen” wanneer daarom wordt gevraagd.</li>
+                                    <li>Back-up bevat alleen patiëntendossiers; geen inlog- of sessiegegevens.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -178,6 +202,10 @@
                         <div class="form-group">
                             <label for="patient-roepnaam" class="form-label">Roepnaam *</label>
                             <input type="text" id="patient-roepnaam" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient-achternaam" class="form-label">Achternaam *</label>
+                            <input type="text" id="patient-achternaam" class="form-control" required>
                         </div>
                         
                         <div class="form-group">
@@ -270,7 +298,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <button type="submit" class="btn btn-primary">Patiënt toevoegen</button>
+                            <button type="submit" class="btn btn-primary">Patiënt toevoegen en dossier bewerken</button>
                             <button type="button" class="btn btn-secondary" onclick="resetPatientForm()">Formulier wissen</button>
                         </div>
                     </form>
@@ -282,7 +310,7 @@
     <!-- Patiënt bewerken pagina -->
     <div id="edit-patient-page" class="page" style="display: none;">
         <div class="container">
-            <h1>Patiënt bewerken</h1>
+            <h1>Patiëntdossier bewerken</h1>
             
             <div id="edit-patient-alerts"></div>
             
@@ -304,6 +332,10 @@
                     <div class="form-group">
                         <label for="edit-roepnaam" class="form-label">Roepnaam *</label>
                         <input type="text" id="edit-roepnaam" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-achternaam" class="form-label">Achternaam *</label>
+                        <input type="text" id="edit-achternaam" class="form-control" required>
                     </div>
                     
                     <div class="form-group">
@@ -397,6 +429,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="intake-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -607,6 +640,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="onderzoek-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -659,6 +693,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="diagnose-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -697,6 +732,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="meetinstrumenten-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -726,6 +762,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="behandelplan-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -825,6 +862,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Behandelsessie toevoegen</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="evaluatie-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -915,6 +953,7 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
+                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="patients" style="margin-left: 8px;">Opslaan en terug naar overzicht</button>
                     </div>
                 </form>
             </div>
