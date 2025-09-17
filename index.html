@@ -21,7 +21,7 @@
     <!-- Waarschuwingsbalk -->
     <div class="warning-banner">
         <div class="container">
-            <strong>Waarschuwing:</strong> Na het verlaten van deze site worden alle gegevens verwijderd. Maak een PDF van je ingevulde dossier(s) voordat je de site verlaat, bijvoorbeeld voor gebruik in eJournal. Vul vanwege veiligheid (AVG) geen echte patiënt-/persoonsgegevens in.
+            <strong>Waarschuwing:</strong> Gegevens die je invult worden lokaal in de browser op jouw device opgeslagen (local storage). Ze blijven bewaard zolang dit lokale geheugen niet wordt geleegd; dit kan soms per ongeluk gebeuren. Het is verstandig regelmatig een PDF te genereren en te bewaren. Vul om privacyredenen (AVG) geen echte patiënt-/persoonsgegevens in.
         </div>
     </div>
 
@@ -75,8 +75,9 @@
                     
                     <div class="form-group">
                         <label for="login-password" class="form-label">Wachtwoord</label>
-                        <input type="password" id="login-password" class="form-control" required>
+                        <input type="password" id="login-password" class="form-control" placeholder="Kopieer onderstaand wachtwoord en plak hier" required>
                         <small class="form-text">Wachtwoord: HANfysiotherapie</small>
+                        <button type="button" id="copy-password-btn" class="btn btn-secondary" style="margin-top: 8px;">Kopieer wachtwoord</button>
                     </div>
                     
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Inloggen</button>
@@ -94,9 +95,18 @@
                 <div class="card-header">
                     Informatie
                 </div>
-                <div class="card-body">
-                    <p>Dit is een virtueel Elektronisch Patiënten Dossier (EPD) voor studenten fysiotherapie. Gebruik dit systeem om te oefenen met het bijhouden van patiëntendossiers.</p>
-                    <p>Let op: Dit is een oefenomgeving. De gegevens worden alleen lokaal opgeslagen in je browser en worden niet verzonden naar een server.</p>
+            <div class="card-body">
+                <p>Dit is een virtueel Elektronisch Patiënten Dossier (EPD) voor studenten fysiotherapie. Gebruik dit systeem om te oefenen met het bijhouden van patiëntendossiers.</p>
+                <div class="alert alert-info">
+                    <strong>Belangrijk: lokale opslag & privacy</strong>
+                    <ul>
+                        <li>Gegevens worden uitsluitend lokaal opgeslagen in jouw browser (local storage) op je eigen device; er wordt niets naar een server verzonden.</li>
+                        <li>Stap je over naar een ander device of een andere browser, dan zie je jouw eerder ingevulde gegevens niet.</li>
+                        <li>Docenten hebben geen toegang tot jouw lokaal opgeslagen gegevens.</li>
+                        <li>Delen is alleen mogelijk door een PDF van het patiëntendossier te genereren en die te bewaren of te versturen.</li>
+                        <li>Let op: als het lokale geheugen wordt geleegd (bijv. door opschonen), kun je gegevens verliezen. Maak daarom regelmatig een PDF-back-up.</li>
+                    </ul>
+                </div>
                     <p>Gebruik de navigatiebalk bovenaan om tussen de verschillende onderdelen te navigeren:</p>
                     <ul>
                         <li><strong>Home</strong> - Deze startpagina</li>
@@ -143,6 +153,9 @@
                 </div>
                 <div class="card-footer">
                     <a href="#" class="btn btn-primary" data-target="add-patient">Nieuwe patiënt toevoegen</a>
+                    <button type="button" id="backup-download-btn" class="btn btn-secondary" style="margin-left: 10px;">Maak backup</button>
+                    <label for="backup-upload-input" class="btn btn-warning" style="margin-left: 10px;">Backup terugzetten</label>
+                    <input type="file" id="backup-upload-input" accept="application/json" style="display:none" />
                 </div>
             </div>
         </div>

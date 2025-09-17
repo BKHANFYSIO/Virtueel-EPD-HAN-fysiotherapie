@@ -29,6 +29,92 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
+
+    // Kopieer wachtwoord knop (indien aanwezig op loginpagina)
+    const copyPasswordBtn = document.getElementById('copy-password-btn');
+    if (copyPasswordBtn) {
+        copyPasswordBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText('HANfysiotherapie');
+                showAlert('Wachtwoord gekopieerd naar klembord.', 'success', 'login-alerts');
+                const passwordInput = document.getElementById('login-password');
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+            } catch (err) {
+                // Fallback wanneer Clipboard API niet beschikbaar is
+                const tempInput = document.createElement('input');
+                tempInput.value = 'HANfysiotherapie';
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                try {
+                    document.execCommand('copy');
+                    showAlert('Wachtwoord gekopieerd naar klembord.', 'success', 'login-alerts');
+                } catch (e) {
+                    showAlert('Kopiëren mislukt. Kopieer handmatig: HANfysiotherapie', 'warning', 'login-alerts');
+                }
+                tempInput.remove();
+            }
+        });
+    }
+
+    // Backup: downloaden
+    const backupDownloadBtn = document.getElementById('backup-download-btn');
+    if (backupDownloadBtn) {
+        backupDownloadBtn.addEventListener('click', () => {
+            try {
+                const backup = createPatientsBackup();
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const ts = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                const fileName = `EPD-backup_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}.json`;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                showAlert('Backup succesvol aangemaakt en gedownload.', 'success', 'patient-list-alerts');
+            } catch (e) {
+                console.error(e);
+                showAlert('Aanmaken van backup is mislukt.', 'danger', 'patient-list-alerts');
+            }
+        });
+    }
+
+    // Backup: terugzetten
+    const backupUploadInput = document.getElementById('backup-upload-input');
+    if (backupUploadInput) {
+        backupUploadInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const json = JSON.parse(text);
+                const validation = validateBackup(json);
+                if (!validation.valid) {
+                    showAlert(validation.message || 'Ongeldige backup.', 'danger', 'patient-list-alerts');
+                    return;
+                }
+
+                // Kies modus: merge (standaard) of replace-all met bevestiging
+                let mode = 'merge';
+                const replaceAll = confirm('Wil je ALLES vervangen door de backup? Klik op Annuleren voor samenvoegen.');
+                if (replaceAll) mode = 'replace';
+
+                restorePatientsFromBackup(json, mode);
+                renderPatientList();
+                showAlert(mode === 'replace' ? 'Backup teruggezet (alles vervangen).' : 'Backup samengevoegd met bestaande gegevens.', 'success', 'patient-list-alerts');
+                // Reset input zodat je opnieuw kunt kiezen
+                e.target.value = '';
+            } catch (err) {
+                console.error(err);
+                showAlert('Terugzetten van backup is mislukt. Controleer het bestand.', 'danger', 'patient-list-alerts');
+            }
+        });
+    }
 });
 
 // Navigatie functie
@@ -137,6 +223,69 @@ function loadPatients() {
     }
 }
 
+// Maak backup-object
+function createPatientsBackup() {
+    const backup = {
+        version: 1,
+        app: 'Virtueel EPD - Fysiotherapie',
+        createdAt: new Date().toISOString(),
+        data: {
+            patients: patients || []
+        }
+    };
+    return backup;
+}
+
+// Valideer backupbestand
+function validateBackup(json) {
+    if (!json || typeof json !== 'object') return { valid: false, message: 'Leeg of ongeldig JSON-bestand.' };
+    if (json.app !== 'Virtueel EPD - Fysiotherapie') return { valid: false, message: 'Onbekend backuptype.' };
+    if (typeof json.version !== 'number') return { valid: false, message: 'Ontbrekende of ongeldige versie.' };
+    if (!json.data || !Array.isArray(json.data.patients)) return { valid: false, message: 'Geen patiëntenlijst gevonden in backup.' };
+    return { valid: true };
+}
+
+// Herstel patiënten uit backup
+function restorePatientsFromBackup(backupJson, mode = 'merge') {
+    const incoming = backupJson.data.patients || [];
+    const existing = Array.isArray(patients) ? patients : [];
+
+    if (mode === 'replace') {
+        patients = incoming;
+        savePatients();
+        return;
+    }
+
+    // Merge op basis van sleutel (patientnummer of roepnaam+geboortedatum)
+    const existingMap = new Map();
+    existing.forEach(p => {
+        const key = buildPatientKey(p);
+        if (key) existingMap.set(key, p);
+    });
+
+    incoming.forEach(p => {
+        const key = buildPatientKey(p);
+        if (!key) return; // sla overs zonder bruikbare sleutel
+        if (!existingMap.has(key)) {
+            existing.push(p);
+            existingMap.set(key, p);
+        }
+        // Als duplicaat: sla nieuwe over, behoud bestaande
+    });
+
+    patients = existing;
+    savePatients();
+}
+
+function buildPatientKey(p) {
+    if (!p || typeof p !== 'object') return null;
+    if (p.patientnummer && String(p.patientnummer).trim() !== '') return `id:${String(p.patientnummer).trim()}`;
+    const name = (p.roepnaam || '').trim();
+    const dob = (p.geboortedatum || '').trim();
+    if (!name || !dob) return null;
+    return `nameDob:${name.toLowerCase()}|${dob}`;
+}
+
 // Sla patiënten op in lokale opslag
 function savePatients() {
     localStorage.setItem('patients', JSON.stringify(patients));
@@ -146,6 +295,16 @@ function savePatients() {
 function renderPatientList() {
     const patientListElement = document.getElementById('patient-list');
     if (!patientListElement) return;
+    
+    // Bind 'Nieuwe patiënt toevoegen' knop altijd, ook wanneer er (nog) geen patiënten zijn
+    const addPatientBtnEarly = document.querySelector('.card-footer .btn[data-target="add-patient"]');
+    if (addPatientBtnEarly && !addPatientBtnEarly.dataset.bound) {
+        addPatientBtnEarly.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo('add-patient');
+        });
+        addPatientBtnEarly.dataset.bound = 'true';
+    }
     
     patientListElement.innerHTML = '';
     
@@ -166,7 +325,7 @@ function renderPatientList() {
                 </div>
             </div>
             <div class="patient-actions">
-                <button class="btn btn-primary btn-edit" data-index="${index}">Bewerken</button>
+                <button class="btn btn-primary btn-edit" data-index="${index}">Bewerk dossier</button>
                 <button class="btn btn-success btn-pdf" data-index="${index}">PDF Genereren</button>
             </div>
         `;
@@ -188,14 +347,7 @@ function renderPatientList() {
         });
     });
     
-    // Event listener voor 'Nieuwe patiënt toevoegen' knop op patiëntenpagina
-    const addPatientBtn = document.querySelector('.card-footer .btn[data-target="add-patient"]');
-    if (addPatientBtn) {
-        addPatientBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo('add-patient');
-        });
-    }
+    // (Listener voor 'Nieuwe patiënt toevoegen' is eerder al gebonden)
 }
 
 // Nieuwe patiënt toevoegen
@@ -252,14 +404,14 @@ function addPatient(event) {
     
     // Sla op in lokale opslag
     savePatients();
-    
-    // Toon bevestiging
-    showAlert('Patiënt succesvol toegevoegd.', 'success', 'add-patient-alerts');
-    
-    // Navigeer naar patiëntenlijst
+
+    // Navigeer direct naar 'Patiënt bewerken' voor de zojuist toegevoegde patiënt
+    const newIndex = patients.length - 1;
+    editPatient(newIndex);
+    // Toon bevestiging op de bewerkpagina
     setTimeout(() => {
-        navigateTo('patients');
-    }, 1500);
+        showAlert('Patiënt succesvol toegevoegd. Je kunt nu gegevens bewerken.', 'success', 'edit-patient-alerts');
+    }, 0);
 }
 
 // Reset patiëntformulier
@@ -835,34 +987,73 @@ function generatePDF(index) {
         doc.text(`COP: ${currentUser.cop}`, 14, 37);
         doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, 14, 44);
         
-        // Functie om veld toe te voegen met achtergrondkleur voor ingevulde velden
+        // Functie om veld toe te voegen met label en automatisch afbreken (word-wrap)
         function addField(label, value, x, y, maxWidth) {
-            // Teken achtergrond als het veld is ingevuld
-            if (value && value !== '') {
-                doc.setFillColor(240, 248, 255); // Lichtblauwe achtergrond voor ingevulde velden
-                doc.rect(x - 2, y - 4, maxWidth, 6, 'F');
+            const safeValue = value || '';
+            const wrappedLines = doc.splitTextToSize(safeValue, maxWidth - 6);
+            const hasValue = safeValue !== '' && wrappedLines.length > 0;
+
+            // Bepaal line-height en tekstblokhoogte op basis van fontgrootte en lineHeightFactor
+            const fontSize = typeof doc.getFontSize === 'function' ? doc.getFontSize() : 10;
+            const lineHeightFactor = typeof doc.getLineHeightFactor === 'function' ? doc.getLineHeightFactor() : 1.15;
+            const scale = doc.internal && doc.internal.scaleFactor ? doc.internal.scaleFactor : 1;
+            const lineHeight = (fontSize * lineHeightFactor) / scale;
+            const labelSpacing = lineHeight + 2; // extra ruimte onder label
+            const padding = 2.5;
+            const textHeight = hasValue ? wrappedLines.length * lineHeight : 0;
+            const valueBlockHeight = hasValue ? (textHeight + padding * 2) : 0;
+            const requiredHeight = labelSpacing + valueBlockHeight + 2;
+
+            // Paginabreuk indien nodig vóór tekenen
+            if (y + requiredHeight > 270) {
+                doc.addPage();
+                y = 20;
             }
-            doc.text(`${label}: ${value || ''}`, x, y);
-            return y + 6; // Retourneer nieuwe y-positie
+
+            // Label (subkopje)
+            doc.setTextColor(230, 0, 126);
+            doc.setFont(undefined, 'bold');
+            doc.text(label, x, y);
+
+            // Waarde (met achtergrond en wrapping)
+            let nextY = y + labelSpacing;
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+
+            if (hasValue) {
+                // Achtergrond exact passend aan tekstblokhoogte
+                doc.setFillColor(240, 248, 255);
+                doc.rect(x - 2, nextY - padding, maxWidth, valueBlockHeight, 'F');
+                doc.text(wrappedLines, x, nextY, { maxWidth: maxWidth - 6 });
+                nextY += textHeight + padding + 3; // iets extra marge onder blok
+            } else {
+                nextY += lineHeight + 1;
+            }
+
+            return nextY;
         }
         
         // Functie om sectieheader toe te voegen
         function addSectionHeader(text, x, y) {
-            doc.setFontSize(14);
+            doc.setFontSize(16);
             doc.setTextColor(230, 0, 126);
+            doc.setFont(undefined, 'bold');
             doc.text(text, x, y);
             doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
             doc.setTextColor(0, 0, 0);
-            return y + 7;
+            return y + 8;
         }
         
         // Functie om subsectieheader toe te voegen
         function addSubSectionHeader(text, x, y) {
             doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
             doc.setTextColor(0, 0, 0);
             doc.text(text, x, y);
             doc.setFontSize(10);
-            return y + 6;
+            doc.setFont(undefined, 'normal');
+            return y + 8;
         }
         
         // Functie om te controleren of we een nieuwe pagina nodig hebben
@@ -974,11 +1165,9 @@ function generatePDF(index) {
         yPos = addField('Persoonlijke factoren', intake.persoonlijkeFactoren, 14, yPos, 180);
         yPos = addField('Voorlopige conclusie/hypothese(n)', intake.voorlopigeHypothese, 14, yPos, 180);
         
-        // Voeg nieuwe pagina toe voor onderzoeksfase
+        // 2. Onderzoeksfase start altijd op nieuwe pagina
         doc.addPage();
         yPos = 20;
-        
-        // Onderzoeksfase
         yPos = addSectionHeader('2. Onderzoeksfase', 14, yPos);
         
         // Controleer of onderzoeksFase bestaat, zo niet maak een leeg object
@@ -997,8 +1186,9 @@ function generatePDF(index) {
         yPos = addField('Conclusie onderzoek', onderzoek.conclusieOnderzoek, 14, yPos, 180);
         yPos = addField('Behandelbare grootheden', onderzoek.behandelbareGrootheden, 14, yPos, 180);
         
-        // Diagnosefase
-        yPos = checkPageBreak(yPos, 240);
+        // 3. Diagnosefase start altijd op nieuwe pagina
+        doc.addPage();
+        yPos = 20;
         yPos = addSectionHeader('3. Diagnosefase', 14, yPos);
         
         // Controleer of diagnoseFase bestaat, zo niet maak een leeg object
@@ -1010,8 +1200,9 @@ function generatePDF(index) {
         yPos = addField('Behandelen conform richtlijn', diagnose.behandelenRichtlijn ? 'Ja' : 'Nee', 14, yPos, 180);
         yPos = addField('Bijzonderheden', diagnose.bijzonderheden, 14, yPos, 180);
         
-        // Meetinstrumenten
-        yPos = checkPageBreak(yPos, 240);
+        // 4. Meetinstrumenten start altijd op nieuwe pagina
+        doc.addPage();
+        yPos = 20;
         yPos = addSectionHeader('4. Meetinstrumenten', 14, yPos);
         
         // Controleer of meetinstrumenten bestaat, zo niet maak een leeg object
