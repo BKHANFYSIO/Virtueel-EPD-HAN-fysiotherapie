@@ -20,12 +20,6 @@
         </div>
     </header>
 
-    <!-- Waarschuwingsbalk -->
-    <div class="warning-banner">
-        <div class="container">
-            <strong>Waarschuwing:</strong> Gegevens die je invult worden lokaal in de browser op jouw device opgeslagen (local storage). Ze blijven bewaard zolang dit lokale geheugen niet wordt geleegd; dit kan soms per ongeluk gebeuren. Het is verstandig regelmatig een backup te makeen en te bewaren. Vul om privacyredenen (AVG) geen echte patiënt-/persoonsgegevens in. Ook al wordt het lokaal opgeslagen. 
-        </div>
-    </div>
 
     <!-- Navigatie -->
     <nav>
@@ -48,7 +42,7 @@
                 <div id="login-alerts"></div>
                 
                 <div class="alert alert-warning">
-                    <strong>Let op!</strong> Dit is een oefenomgeving. Voer geen echte persoonsgegevens in. De data wordt niet permanent bewaard. Ververs de pagina niet voordat je een PDF hebt gegenereerd en gedownload.
+                    <strong>Let op!</strong> Dit is een oefenomgeving. Gegevens die je invult worden lokaal in de browser op jouw device opgeslagen (local storage). Ze blijven bewaard zolang dit lokale geheugen niet wordt geleegd; dit kan soms per ongeluk gebeuren. Het is verstandig regelmatig een backup te maken en te bewaren. Vul om privacyredenen (AVG) geen echte patiënt-/persoonsgegevens in. Ook al wordt het lokaal opgeslagen.
                 </div>
                 
                 <form id="login-form" onsubmit="login(event)">
@@ -99,41 +93,35 @@
                 </div>
             <div class="card-body">
                 <p>Dit is een virtueel Elektronisch Patiënten Dossier (EPD) voor studenten fysiotherapie. Gebruik dit systeem om te oefenen met het bijhouden van patiëntendossiers.</p>
+                
+                <p><strong>Voorbeelden van gebruik:</strong></p>
+                <ul>
+                    <li>Bij het bekijken van een video van een casus - om te ervaren hoe het is om live gegevens bij te houden</li>
+                    <li>Tijdens een anamnese die je bij een simulatiepatiënt uitvoert</li>
+                    <li>Direct nadat je een simulatiepatiënt hebt geïnterviewd - om de gegevens vast te leggen</li>
+                    <li>Voor het oefenen met verschillende fases van het fysiotherapeutisch proces</li>
+                    <li>Om te leren hoe je een professioneel patiëntendossier opbouwt</li>
+                </ul>
+                
                 <div class="alert alert-info">
                     <strong>Belangrijk: lokale opslag & privacy</strong>
                     <ul>
                         <li>Gegevens worden uitsluitend lokaal opgeslagen in jouw browser (local storage) op je eigen device; er wordt niets naar een server verzonden.</li>
                         <li>Stap je over naar een ander device of een andere browser, dan zie je jouw eerder ingevulde gegevens niet.</li>
                         <li>Docenten hebben geen toegang tot jouw lokaal opgeslagen gegevens.</li>
-                        <li>Delen is alleen mogelijk door een PDF van het patiëntendossier te genereren en die te delen, bijvoorbeeld in eJournal.</li>
-                        <li>Let op: als het lokale geheugen wordt geleegd (bijv. door opschonen), kun je gegevens verliezen. Maak daarom ook regelmatig een back-up. Dit doe je in het patiëntenoverzicht via de knop “Backup maken”.</li>
+                        <li>Delen is alleen mogelijk door een PDF van het patiëntendossier te genereren en die te delen met anderen, bijvoorbeeld via eJournal.</li>
+                        <li>Let op: als het lokale geheugen wordt geleegd (bijv. door opschonen van je browser of het wissen van sitegegevens), kun je gegevens verliezen. Maak daarom ook regelmatig een back-up. Dit doe je in het patiëntenoverzicht via de knop “Backup maken”.</li>
                     </ul>
                 </div>
                     <p>Gebruik de navigatiebalk bovenaan om tussen de verschillende onderdelen te navigeren:</p>
                     <ul>
-                        <li><strong>Home</strong> - Deze startpagina</li>
-                        <li><strong>Patiënten</strong> - Overzicht van alle patiënten</li>
-                        <li><strong>Patiënt toevoegen</strong> - Een nieuwe patiënt aanmaken</li>
+                        <li><strong>Home</strong> - Startpagina met basisuitleg, voorbeelden van gebruik, en belangrijke informatie over lokale opslag en privacy.</li>
+                        <li><strong>Patiënten</strong> - Overzicht van bestaande patiëntendossiers. Hier kun je dossiers bewerken, PDF’s genereren, dossiers verwijderen, en <em>backups maken of terugzetten</em>.</li>
+                        <li><strong>Patiënt toevoegen</strong> - Maak een nieuw patiëntdossier aan en ga daarna direct door naar ‘Bewerk dossier’ om de tabbladen (Intake, Onderzoek, etc.) te vullen.</li>
                     </ul>
                 </div>
             </div>
             
-            <div class="card" style="margin-top: 20px;">
-                <div class="card-header">
-                    Aan de slag
-                </div>
-                <div class="card-body">
-                    <p>Om te beginnen:</p>
-                    <ol>
-                        <li>Ga naar "Patiënt toevoegen" om een nieuwe patiënt aan te maken</li>
-                        <li>Vul de basisgegevens van de patiënt in</li>
-                        <li>Ga naar "Patiënten" om het overzicht te bekijken</li>
-                        <li>Klik op "Bewerken" om het dossier van een patiënt te bewerken</li>
-                        <li>Vul de verschillende fases van het dossier in</li>
-                        <li>Klik op "PDF Genereren" om een PDF van het dossier te maken</li>
-                    </ol>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -188,6 +176,23 @@
     <!-- Patiënt toevoegen pagina -->
     <div id="add-patient-page" class="page" style="display: none;">
         <div class="container">
+            <div class="critical-warning" style="margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #ff4444, #cc0000); border: 3px solid #ff0000; border-radius: 12px; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3); animation: pulse-warning 2s infinite; position: relative; overflow: hidden;">
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="background: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 15px; animation: bounce-icon 1.5s infinite;">
+                        <span style="font-size: 24px; color: #ff0000; font-weight: bold;">⚠</span>
+                    </div>
+                    <h3 style="color: white; margin: 0; font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); letter-spacing: 0.5px;">
+                        WAARSCHUWING
+                    </h3>
+                </div>
+                <div style="color: white; font-size: 16px; font-weight: 600; margin-bottom: 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                    Plaats NOOIT echte persoonsgegevens of herleidbare (medische) gegevens van een echte patiënt!
+                </div>
+                <div style="color: #ffe6e6; font-size: 14px; line-height: 1.5; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
+                    Gegevens worden weliswaar lokaal in jouw browser opgeslagen, maar dat biedt geen 100% garantie. Bovendien kun je jouw gegevens delen via een PDF (bijv. via eJournal) en staan gegevens ook in je gemaakte backups, die je mogelijk in de cloud opslaat. Zorg er daarom voor dat er <strong style="color: white; text-decoration: underline;">NOOIT AVG‑gevoelige gegevens</strong> in het dossier staan. Dit behoort tot het professioneel handelen dat we van (toekomstige) fysiotherapeuten verwachten!
+                </div>
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, white, transparent); animation: shimmer 3s infinite;"></div>
+            </div>
             <h1>Patiënt toevoegen</h1>
             
             <div id="add-patient-alerts"></div>

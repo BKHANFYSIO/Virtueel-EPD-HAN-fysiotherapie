@@ -172,6 +172,7 @@ function navigateTo(page) {
         }
     });
 
+
     // Specifieke acties per pagina
     switch (page) {
         case 'home':
