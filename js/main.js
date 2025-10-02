@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showAlert('Wachtwoord gekopieerd naar klembord.', 'success', 'login-alerts');
                 const passwordInput = document.getElementById('login-password');
                 if (passwordInput) {
+                    passwordInput.value = 'HANfysiotherapie';
                     passwordInput.focus();
                 }
             } catch (err) {
@@ -55,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     showAlert('Kopiëren mislukt. Kopieer handmatig: HANfysiotherapie', 'warning', 'login-alerts');
                 }
                 tempInput.remove();
+                // Plak ook in het veld als fallback
+                const passwordInput = document.getElementById('login-password');
+                if (passwordInput) {
+                    passwordInput.value = 'HANfysiotherapie';
+                    passwordInput.focus();
+                }
             }
         });
     }
@@ -246,8 +253,6 @@ function navigateTo(page) {
 function login(event) {
     event.preventDefault();
     
-    // Sticky toolbar tonen op bewerkpagina
-    updateEditToolbarVisibility(page);
     const firstName = document.getElementById('login-firstname').value.trim();
     const lastName = document.getElementById('login-lastname').value.trim();
     const cop = document.getElementById('login-cop').value;
