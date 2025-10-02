@@ -25,6 +25,30 @@ body {
   color: var(--han-dark-gray);
   line-height: 1.6;
 }
+.with-edit-toolbar {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* Sticky edit toolbar onderaan */
+.edit-toolbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--han-gray);
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  z-index: 2000;
+  display: none; /* standaard verborgen; JS toont op bewerkpagina */
+}
+
+.edit-toolbar .toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 
 .container {
   width: 100%;
@@ -220,10 +244,18 @@ nav {
   color: var(--han-white);
   padding: 15px 20px;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .card-body {
   padding: 20px;
+}
+
+/* Visuele hint bij bewerken van sessievelden */
+.sessie-input.editing {
+  background-color: var(--han-filled-field);
 }
 
 /* Meer ruimte voor lijstjes in content boxen */

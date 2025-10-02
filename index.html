@@ -432,10 +432,7 @@
                         <input type="text" id="edit-zvlsoort" class="form-control">
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="intake-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
-                    </div>
+                    
                 </form>
             </div>
             
@@ -643,10 +640,7 @@
                         <textarea id="edit-voorlopige-conclusie" class="form-control" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="onderzoek-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
-                    </div>
+                    
                 </form>
             </div>
             
@@ -696,10 +690,7 @@
                         <textarea id="edit-behandelbare-grootheden" class="form-control" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="diagnose-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
-                    </div>
+                    
                 </form>
             </div>
             
@@ -735,10 +726,7 @@
                         <textarea id="edit-bijzonderheden-diagnose" class="form-control" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="meetinstrumenten-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
-                    </div>
+                    
                 </form>
             </div>
             
@@ -765,10 +753,7 @@
                         <textarea id="edit-algofunctional" class="form-control" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="behandelplan-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
-                    </div>
+                    
                 </form>
             </div>
             
@@ -820,21 +805,21 @@
                         <textarea id="edit-toelichting-plan" class="form-control" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                    </div>
+                    
                 </form>
             </div>
             
             <!-- Behandeling tab -->
             <div id="behandel-content" class="tab-content">
                 <h3>Behandelsessies</h3>
+                <div class="form-group">
+                    <button type="button" id="toggle-new-session-btn" class="btn btn-primary">Nieuwe behandelsessie</button>
+                </div>
                 <div id="behandelsessies-container">
                     <!-- Behandelsessies worden hier dynamisch ingevuld -->
                 </div>
                 
-                <h3>Nieuwe behandelsessie toevoegen</h3>
-                <form id="behandelsessie-form" onsubmit="addBehandelsessie(event)">
+                <form id="behandelsessie-form" onsubmit="addBehandelsessie(event)" style="display: none;">
                     <div class="form-group">
                         <label for="edit-behandel-datum" class="form-label">Datum *</label>
                         <input type="date" id="edit-behandel-datum" class="form-control" required>
@@ -867,7 +852,6 @@
                     
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">Behandelsessie toevoegen</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="evaluatie-tab" style="margin-left: 8px;">Opslaan en volgend tabblad</button>
                     </div>
                 </form>
             </div>
@@ -956,15 +940,21 @@
                         <textarea id="edit-bijzonderheden-evaluatie" class="form-control" rows="3"></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <button type="button" class="btn btn-secondary save-next-btn" data-next-tab="patients" style="margin-left: 8px;">Opslaan en terug naar overzicht</button>
-                    </div>
+                    
                 </form>
             </div>
             
-            <div class="form-group" style="margin-top: 20px;">
-                <a href="#" class="btn btn-secondary" data-target="patients">Terug naar patiëntenoverzicht</a>
+            
+        </div>
+    </div>
+
+    <!-- Sticky actiebalk alleen voor bewerkpagina -->
+    <div id="edit-toolbar" class="edit-toolbar">
+        <div class="container">
+            <div class="toolbar-actions">
+                <button type="button" id="toolbar-save-btn" class="btn btn-secondary">Opslaan</button>
+                <button type="button" id="toolbar-save-next-btn" class="btn btn-primary">Opslaan en volgend tabblad</button>
+                <a href="#" id="toolbar-back-btn" class="btn btn-secondary">Terug naar patiëntenoverzicht</a>
             </div>
         </div>
     </div>
@@ -975,3 +965,4 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+

@@ -2,6 +2,7 @@
 let currentUser = null;
 let patients = [];
 let currentPatient = null;
+let currentEpisodeIndex = 0; // actieve behandelepisode binnen huidig dossier
 
 // DOM geladen
 document.addEventListener('DOMContentLoaded', () => {
@@ -143,6 +144,60 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => activateTab(nextTabId), 150);
         }
     });
+
+    // Toggle nieuw-sessie formulier
+    const toggleNewSessionBtn = document.getElementById('toggle-new-session-btn');
+    const newSessionForm = document.getElementById('behandelsessie-form');
+    if (toggleNewSessionBtn && newSessionForm && !toggleNewSessionBtn.dataset.bound) {
+        toggleNewSessionBtn.addEventListener('click', () => {
+            const isHidden = newSessionForm.style.display === 'none' || newSessionForm.style.display === '';
+            newSessionForm.style.display = isHidden ? 'block' : 'none';
+            toggleNewSessionBtn.textContent = isHidden ? 'Annuleer nieuwe sessie' : 'Nieuwe behandelsessie';
+            if (isHidden) {
+                // Scroll soepel naar het formulier en focus op de datum
+                try {
+                    const targetY = Math.max(0, (window.scrollY || window.pageYOffset || 0) + newSessionForm.getBoundingClientRect().top - 100);
+                    if (typeof window.scrollTo === 'function') {
+                        window.scrollTo({ top: targetY, behavior: 'smooth' });
+                    } else {
+                        newSessionForm.scrollIntoView();
+                    }
+                    setTimeout(() => { document.getElementById('edit-behandel-datum')?.focus(); }, 250);
+                } catch (_) {}
+            }
+        });
+        toggleNewSessionBtn.dataset.bound = 'true';
+    }
+
+    // Sticky toolbar knoppen (alleen binden indien aanwezig)
+    const toolbarSaveBtn = document.getElementById('toolbar-save-btn');
+    const toolbarSaveNextBtn = document.getElementById('toolbar-save-next-btn');
+    const toolbarBackBtn = document.getElementById('toolbar-back-btn');
+    if (toolbarSaveBtn && !toolbarSaveBtn.dataset.bound) {
+        toolbarSaveBtn.addEventListener('click', () => {
+            // Bepaal actief tab en submit corresponderend formulier
+            submitActiveTabForm('save');
+        });
+        toolbarSaveBtn.dataset.bound = 'true';
+    }
+    if (toolbarSaveNextBtn && !toolbarSaveNextBtn.dataset.bound) {
+        toolbarSaveNextBtn.addEventListener('click', () => {
+            submitActiveTabForm('save-next');
+        });
+        toolbarSaveNextBtn.dataset.bound = 'true';
+    }
+    if (toolbarBackBtn && !toolbarBackBtn.dataset.bound) {
+        toolbarBackBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const ok = confirm('Wil je terug naar het patiëntenoverzicht? Niet-opgeslagen wijzigingen kunnen verloren gaan.');
+            if (!ok) return;
+            navigateTo('patients');
+        });
+        toolbarBackBtn.dataset.bound = 'true';
+    }
+
+    // Eerste zichtbaarheid-check (na initiale render)
+    setTimeout(updateEditToolbarVisibility, 0);
 });
 
 // Navigatie functie
@@ -191,6 +246,8 @@ function navigateTo(page) {
 function login(event) {
     event.preventDefault();
     
+    // Sticky toolbar tonen op bewerkpagina
+    updateEditToolbarVisibility(page);
     const firstName = document.getElementById('login-firstname').value.trim();
     const lastName = document.getElementById('login-lastname').value.trim();
     const cop = document.getElementById('login-cop').value;
@@ -223,6 +280,45 @@ function login(event) {
     // Navigeer naar home
     navigateTo('home');
     updateUserInfo();
+}
+
+// Toon/verberg sticky edit toolbar gebaseerd op zichtbaarheid van bewerkpagina
+function updateEditToolbarVisibility(pageHint) {
+    const toolbar = document.getElementById('edit-toolbar');
+    if (!toolbar) return;
+    const editPage = document.getElementById('edit-patient-page');
+    const byHint = pageHint === 'edit-patient';
+    const byStyle = !!editPage && editPage.style.display !== 'none';
+    const visible = byHint || byStyle;
+    toolbar.style.display = visible ? 'block' : 'none';
+    if (visible) {
+        document.body.classList.add('with-edit-toolbar');
+    } else {
+        document.body.classList.remove('with-edit-toolbar');
+    }
+}
+// Hulpfunctie: submit het formulier van het actieve tabblad
+function submitActiveTabForm(mode) {
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) return;
+    const form = activeTab.querySelector('form');
+    if (!form) return;
+    // Bepaal volgende tab id dynamisch indien save-next
+    if (mode === 'save-next') {
+        const tabs = Array.from(document.querySelectorAll('.tabs .tab-item'))
+          .map(el => el.id)
+          .filter(Boolean);
+        const currentTabId = document.querySelector('.tab-item.active')?.id || '';
+        const idx = tabs.indexOf(currentTabId);
+        const nextId = idx >= 0 && idx < tabs.length - 1 ? tabs[idx + 1] : null;
+        if (nextId) setTimeout(() => activateTab(nextId), 150);
+    }
+    // Submit het formulier (triggert bestaande update* functies)
+    if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+    } else {
+        form.submit();
+    }
 }
 
 // Logout functie
@@ -473,9 +569,26 @@ function resetPatientForm() {
 // Bewerk patiënt
 function editPatient(index) {
     currentPatient = patients[index];
+    // Zorg voor episodes-structuur; migreer oude vlakke velden naar episode[0]
+    if (currentPatient && !Array.isArray(currentPatient.episodes)) {
+        const migrated = {
+            begindatum: currentPatient.begindatum || '',
+            einddatum: currentPatient.einddatum || '',
+            verslagleggingsrichtlijn: currentPatient.verslagleggingsrichtlijn || '',
+            behandelplanFase: currentPatient.behandelplanFase || {},
+            behandelFase: currentPatient.behandelFase || [],
+            eindevaluatieFase: currentPatient.eindevaluatieFase || {}
+        };
+        currentPatient.episodes = [migrated];
+        // houd ook de vlakke velden aan voor backwards compat, maar schrijf consistenter weg vanuit episodes
+        savePatients();
+    }
+    currentEpisodeIndex = 0;
     
     // Navigeer naar bewerk pagina
     navigateTo('edit-patient');
+    // Forceer tonen toolbar na navigatie
+    updateEditToolbarVisibility('edit-patient');
     // Scroll volledig naar boven zodat header, menu en waarschuwing zichtbaar zijn
     setTimeout(() => {
         if (typeof window.scrollTo === 'function') {
@@ -527,10 +640,11 @@ function fillPatientForm() {
     document.getElementById('edit-huisarts').value = currentPatient.huisarts || '';
     document.getElementById('edit-huisartstelefoon').value = currentPatient.huisartstelefoon || '';
     
-    // Behandelepisode
-    document.getElementById('edit-begindatum').value = currentPatient.begindatum || '';
-    document.getElementById('edit-einddatum').value = currentPatient.einddatum || '';
-    document.getElementById('edit-verslagleggingsrichtlijn').value = currentPatient.verslagleggingsrichtlijn || '';
+    // Behandelepisode (via actieve episode)
+    const ep = getActiveEpisode();
+    document.getElementById('edit-begindatum').value = ep ? (ep.begindatum || '') : '';
+    document.getElementById('edit-einddatum').value = ep ? (ep.einddatum || '') : '';
+    document.getElementById('edit-verslagleggingsrichtlijn').value = ep ? (ep.verslagleggingsrichtlijn || '') : '';
     
     // Verzekering
     document.getElementById('edit-verzekeraar').value = currentPatient.verzekeraar || '';
@@ -541,6 +655,7 @@ function fillPatientForm() {
     fillOnderzoeksFase();
     fillDiagnoseFase();
     fillMeetinstrumenten();
+    renderEpisodesOverview();
     fillBehandelplanFase();
     fillBehandelFase();
     fillEindevaluatieFase();
@@ -640,9 +755,10 @@ function fillMeetinstrumenten() {
 
 // Vul Behandelplanfase
 function fillBehandelplanFase() {
-    if (!currentPatient || !currentPatient.behandelplanFase) return;
+    const ep = getActiveEpisode();
+    if (!currentPatient || !ep || !ep.behandelplanFase) return;
     
-    const plan = currentPatient.behandelplanFase;
+    const plan = ep.behandelplanFase;
     
     document.getElementById('edit-plan-hulpvraag').value = plan.hulpvraag || '';
     document.getElementById('edit-verwachtingen').value = plan.verwachtingen || '';
@@ -655,57 +771,225 @@ function fillBehandelplanFase() {
     document.getElementById('edit-toelichting-plan').value = plan.toelichting || '';
 }
 
+// Episodes helpers en UI
+function getActiveEpisode() {
+    if (!currentPatient || !Array.isArray(currentPatient.episodes) || currentPatient.episodes.length === 0) return null;
+    const idx = Math.min(Math.max(currentEpisodeIndex || 0, 0), currentPatient.episodes.length - 1);
+    return currentPatient.episodes[idx];
+}
+
+function ensureActiveEpisode() {
+    if (!currentPatient.episodes) currentPatient.episodes = [];
+    if (currentPatient.episodes.length === 0) {
+        currentPatient.episodes.push({ begindatum: '', einddatum: '', verslagleggingsrichtlijn: '', behandelplanFase: {}, behandelFase: [], eindevaluatieFase: {} });
+    }
+    currentEpisodeIndex = Math.min(Math.max(currentEpisodeIndex || 0, 0), currentPatient.episodes.length - 1);
+    return currentPatient.episodes[currentEpisodeIndex];
+}
+
+function renderEpisodesOverview() {
+    const container = document.getElementById('episodes-overview-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const episodes = Array.isArray(currentPatient && currentPatient.episodes) ? currentPatient.episodes : [];
+    if (episodes.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">Geen behandelepisodes. Klik op "Nieuwe behandelepisode" om te starten.</div>';
+        return;
+    }
+    const list = document.createElement('div');
+    episodes.forEach((ep, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn ' + (i === currentEpisodeIndex ? 'btn-primary' : 'btn-secondary');
+        const label = `Episode ${i + 1}${ep.begindatum ? ` (${ep.begindatum}${ep.einddatum ? ` - ${ep.einddatum}` : ''})` : ''}`;
+        btn.textContent = label;
+        btn.style.marginRight = '8px';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentEpisodeIndex = i;
+            // Her-vul episodegebonden velden en lijst
+            fillPatientForm();
+        });
+        list.appendChild(btn);
+    });
+    container.appendChild(list);
+}
+
+function createNewEpisode() {
+    if (!currentPatient) return;
+    const ep = ensureActiveEpisode();
+    // Nieuwe lege episode toevoegen
+    currentPatient.episodes.push({ begindatum: '', einddatum: '', verslagleggingsrichtlijn: '', behandelplanFase: {}, behandelFase: [], eindevaluatieFase: {} });
+    currentEpisodeIndex = currentPatient.episodes.length - 1;
+    savePatients();
+    fillPatientForm();
+    showAlert('Nieuwe behandelepisode aangemaakt.', 'success', 'edit-patient-alerts');
+}
+
 // Vul Behandelfase
 function fillBehandelFase() {
-    if (!currentPatient || !currentPatient.behandelFase || !currentPatient.behandelFase.length) return;
-    
-    // Toon bestaande behandelsessies
+    // Vind container en reset altijd om 'doorlekken' tussen patiënten te voorkomen
     const behandelContainer = document.getElementById('behandelsessies-container');
+    if (!behandelContainer) return;
     behandelContainer.innerHTML = '';
-    
-    currentPatient.behandelFase.forEach((sessie, index) => {
+
+    const ep = getActiveEpisode();
+    // Geen huidige patiënt of geen sessies: toon lege staat en stop
+    if (!currentPatient || !ep || !Array.isArray(ep.behandelFase) || ep.behandelFase.length === 0) {
+        behandelContainer.innerHTML = '<div class="alert alert-info">Geen behandelsessies geregistreerd.</div>';
+        return;
+    }
+
+    // Toon bestaande behandelsessies als inklapbare kaarten (standaard ingeklapt)
+    ep.behandelFase.forEach((sessie, index) => {
         const sessieElement = document.createElement('div');
-        sessieElement.className = 'card mb-3';
+        sessieElement.className = 'card mb-3 behandel-sessie';
+        
+        const bodyId = `behandelsessie-${index}-body`;
         sessieElement.innerHTML = `
-            <div class="card-header">
-                Behandelsessie ${index + 1}
+            <div class="card-header behandel-toggle" role="button" tabindex="0" aria-expanded="false" aria-controls="${bodyId}">
+                <span class="chevron" aria-hidden="true">▶</span>
+                Behandelsessie ${index + 1}${sessie.datum ? ` – ${formatDutchDate(sessie.datum)}` : ''}
             </div>
-            <div class="card-body">
+            <div class="card-body" id="${bodyId}" style="display: none;">
                 <div class="form-group">
                     <label class="form-label">Datum</label>
-                    <input type="date" class="form-control" value="${sessie.datum || ''}" readonly>
+                    <input type="date" class="form-control sessie-input" data-field="datum" value="${sessie.datum || ''}" readonly>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Subjectief</label>
-                    <textarea class="form-control" readonly>${sessie.subjectief || ''}</textarea>
+                    <textarea class="form-control sessie-input" data-field="subjectief" readonly>${sessie.subjectief || ''}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Objectief</label>
-                    <textarea class="form-control" readonly>${sessie.objectief || ''}</textarea>
+                    <textarea class="form-control sessie-input" data-field="objectief" readonly>${sessie.objectief || ''}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Analyse</label>
-                    <textarea class="form-control" readonly>${sessie.analyse || ''}</textarea>
+                    <textarea class="form-control sessie-input" data-field="analyse" readonly>${sessie.analyse || ''}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Plan</label>
-                    <textarea class="form-control" readonly>${sessie.plan || ''}</textarea>
+                    <textarea class="form-control sessie-input" data-field="plan" readonly>${sessie.plan || ''}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Afspraken</label>
-                    <textarea class="form-control" readonly>${sessie.afspraken || ''}</textarea>
+                    <textarea class="form-control sessie-input" data-field="afspraken" readonly>${sessie.afspraken || ''}</textarea>
+                </div>
+                <div class="form-group" style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-secondary btn-edit">Bewerken</button>
+                    <button type="button" class="btn btn-primary btn-save" style="display:none;">Opslaan</button>
+                    <button type="button" class="btn btn-warning btn-cancel" style="display:none;">Annuleren</button>
+                    <button type="button" class="btn btn-danger btn-delete" style="margin-left:auto;">Verwijderen</button>
                 </div>
             </div>
         `;
+
+        // Voeg toe aan container
         behandelContainer.appendChild(sessieElement);
+
+        // Toggle logica: standaard ingeklapt, klik/Enter/Space togglet
+        const header = sessieElement.querySelector('.behandel-toggle');
+        const chevron = sessieElement.querySelector('.chevron');
+        const body = sessieElement.querySelector('.card-body');
+        const toggle = () => {
+            const expanded = header.getAttribute('aria-expanded') === 'true';
+            header.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+            body.style.display = expanded ? 'none' : 'block';
+            if (chevron) chevron.textContent = expanded ? '▶' : '▼';
+        };
+        header.addEventListener('click', toggle);
+        header.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggle();
+            }
+        });
+
+        // Edit/Delete handlers
+        const btnEdit = sessieElement.querySelector('.btn-edit');
+        const btnSave = sessieElement.querySelector('.btn-save');
+        const btnCancel = sessieElement.querySelector('.btn-cancel');
+        const btnDelete = sessieElement.querySelector('.btn-delete');
+        const inputs = Array.from(sessieElement.querySelectorAll('.sessie-input'));
+
+        const setEditing = (editing) => {
+            inputs.forEach(el => {
+                if (el.tagName === 'INPUT') el.readOnly = !editing;
+                if (el.tagName === 'TEXTAREA') el.readOnly = !editing;
+                el.classList.toggle('editing', editing);
+            });
+            btnEdit.style.display = editing ? 'none' : 'inline-block';
+            btnSave.style.display = editing ? 'inline-block' : 'none';
+            btnCancel.style.display = editing ? 'inline-block' : 'none';
+        };
+
+        let originalValues = null;
+        btnEdit.addEventListener('click', () => {
+            originalValues = inputs.map(el => ({ field: el.dataset.field, value: el.value || el.textContent }));
+            setEditing(true);
+        });
+
+        btnCancel.addEventListener('click', () => {
+            if (originalValues) {
+                originalValues.forEach(({ field, value }) => {
+                    const el = inputs.find(i => i.dataset.field === field);
+                    if (!el) return;
+                    if (el.tagName === 'INPUT') el.value = value || '';
+                    else el.value = value || '';
+                });
+            }
+            setEditing(false);
+        });
+
+        btnSave.addEventListener('click', () => {
+            const updated = { ...sessie };
+            inputs.forEach(el => {
+                const val = (el.value || '').trim();
+                updated[el.dataset.field] = val;
+            });
+            // Valideer datum
+            if (!updated.datum) {
+                alert('Vul een datum in voor de behandelsessie.');
+                return;
+            }
+            // Schrijf terug en sla op
+            ep.behandelFase[index] = updated;
+            currentPatient.behandelFase = ep.behandelFase; // legacy mirror
+            savePatients();
+            // Her-render om header (datum) te updaten en editing te resetten
+            fillBehandelFase();
+        });
+
+        btnDelete.addEventListener('click', () => {
+            const ok = confirm('Weet je zeker dat je deze behandelsessie wilt verwijderen?');
+            if (!ok) return;
+            if (index >= 0 && index < ep.behandelFase.length) {
+                ep.behandelFase.splice(index, 1);
+                currentPatient.behandelFase = ep.behandelFase; // legacy mirror
+                savePatients();
+                fillBehandelFase();
+            }
+        });
     });
+}
+
+function formatDutchDate(isoDate) {
+    try {
+        if (!isoDate) return '';
+        const d = new Date(isoDate);
+        if (Number.isNaN(d.getTime())) return isoDate;
+        return d.toLocaleDateString('nl-NL');
+    } catch (_) {
+        return isoDate;
+    }
 }
 
 // Vul Eindevaluatiefase
 function fillEindevaluatieFase() {
-    if (!currentPatient || !currentPatient.eindevaluatieFase) return;
+    const ep = getActiveEpisode();
+    if (!currentPatient || !ep || !ep.eindevaluatieFase) return;
     
-    const evaluatie = currentPatient.eindevaluatieFase;
+    const evaluatie = ep.eindevaluatieFase;
     
     document.getElementById('edit-evaluatie-hoofddoel').value = evaluatie.hoofddoel || '';
     document.getElementById('edit-evaluatie-behandelplantabel').value = evaluatie.behandelplantabel || '';
@@ -767,10 +1051,15 @@ function updatePatient(event) {
     currentPatient.huisarts = document.getElementById('edit-huisarts').value.trim();
     currentPatient.huisartstelefoon = document.getElementById('edit-huisartstelefoon').value.trim();
     
-    // Behandelepisode
-    currentPatient.begindatum = document.getElementById('edit-begindatum').value;
-    currentPatient.einddatum = document.getElementById('edit-einddatum').value;
-    currentPatient.verslagleggingsrichtlijn = document.getElementById('edit-verslagleggingsrichtlijn').value.trim();
+    // Behandelepisode (actieve)
+    const ep = ensureActiveEpisode();
+    ep.begindatum = document.getElementById('edit-begindatum').value;
+    ep.einddatum = document.getElementById('edit-einddatum').value;
+    ep.verslagleggingsrichtlijn = document.getElementById('edit-verslagleggingsrichtlijn').value.trim();
+    // Mirror naar legacy vlakke velden (voor PDF/backward-compat)
+    currentPatient.begindatum = ep.begindatum;
+    currentPatient.einddatum = ep.einddatum;
+    currentPatient.verslagleggingsrichtlijn = ep.verslagleggingsrichtlijn;
     
     // Verzekering
     currentPatient.verzekeraar = document.getElementById('edit-verzekeraar').value.trim();
@@ -950,11 +1239,12 @@ function updateBehandelplanFase(event) {
     if (!currentPatient) return;
     
     // Maak object aan als het nog niet bestaat
-    if (!currentPatient.behandelplanFase) {
-        currentPatient.behandelplanFase = {};
+    const ep = ensureActiveEpisode();
+    if (!ep.behandelplanFase) {
+        ep.behandelplanFase = {};
     }
     
-    const plan = currentPatient.behandelplanFase;
+    const plan = ep.behandelplanFase;
     
     plan.hulpvraag = document.getElementById('edit-plan-hulpvraag').value.trim();
     plan.verwachtingen = document.getElementById('edit-verwachtingen').value.trim();
@@ -966,6 +1256,8 @@ function updateBehandelplanFase(event) {
     plan.behandelplantabel = document.getElementById('edit-behandelplantabel').value.trim();
     plan.toelichting = document.getElementById('edit-toelichting-plan').value.trim();
     
+    // Mirror naar legacy vlakke velden
+    currentPatient.behandelplanFase = plan;
     // Sla op in lokale opslag
     savePatients();
     
@@ -982,9 +1274,10 @@ function addBehandelsessie(event) {
     
     if (!currentPatient) return;
     
+    const ep = ensureActiveEpisode();
     // Maak array aan als het nog niet bestaat
-    if (!currentPatient.behandelFase) {
-        currentPatient.behandelFase = [];
+    if (!ep.behandelFase) {
+        ep.behandelFase = [];
     }
     
     // Verzamel sessiegegevens
@@ -1004,7 +1297,9 @@ function addBehandelsessie(event) {
     }
     
     // Voeg sessie toe aan array
-    currentPatient.behandelFase.push(sessie);
+    ep.behandelFase.push(sessie);
+    // Mirror naar legacy vlakke velden
+    currentPatient.behandelFase = ep.behandelFase;
     
     // Sla op in lokale opslag
     savePatients();
@@ -1015,8 +1310,14 @@ function addBehandelsessie(event) {
     // Toon bevestiging
     showAlert('Behandelsessie succesvol toegevoegd.', 'success', 'edit-patient-alerts');
     
-    // Werk behandelsessies lijst bij
+    // Werk behandelsessies lijst bij en klap formulier dicht
     fillBehandelFase();
+    const btn = document.getElementById('toggle-new-session-btn');
+    const form = document.getElementById('behandelsessie-form');
+    if (form && btn) {
+        form.style.display = 'none';
+        btn.textContent = 'Nieuwe behandelsessie';
+    }
     if (typeof window.scrollTo === 'function') {
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }
@@ -1029,11 +1330,12 @@ function updateEindevaluatieFase(event) {
     if (!currentPatient) return;
     
     // Maak object aan als het nog niet bestaat
-    if (!currentPatient.eindevaluatieFase) {
-        currentPatient.eindevaluatieFase = {};
+    const ep = ensureActiveEpisode();
+    if (!ep.eindevaluatieFase) {
+        ep.eindevaluatieFase = {};
     }
     
-    const evaluatie = currentPatient.eindevaluatieFase;
+    const evaluatie = ep.eindevaluatieFase;
     
     evaluatie.hoofddoel = document.getElementById('edit-evaluatie-hoofddoel').value.trim();
     evaluatie.behandelplantabel = document.getElementById('edit-evaluatie-behandelplantabel').value.trim();
@@ -1051,6 +1353,8 @@ function updateEindevaluatieFase(event) {
     evaluatie.einddatum = document.getElementById('edit-einddatum-evaluatie').value;
     evaluatie.bijzonderheden = document.getElementById('edit-bijzonderheden-evaluatie').value.trim();
     
+    // Mirror naar legacy vlakke velden
+    currentPatient.eindevaluatieFase = evaluatie;
     // Sla op in lokale opslag
     savePatients();
     
